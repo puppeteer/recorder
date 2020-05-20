@@ -1,0 +1,21 @@
+{
+  "name": "puppeteer-recorder",
+  "version": "0.0.1",
+  "description": "Interactively record puppeteer scripts",
+  "main": "index.js",
+  "dependencies": {
+    "jest": "^26.0.1",
+    "prettier": "^2.0.5",
+    "puppeteer": "^3.0.2",
+    "ts-jest": "^26.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.2.3",
+    "typescript": "^3.9.2"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "The Chromium Authors",
+  "license": "Apache-2.0"
+}
