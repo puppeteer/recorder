@@ -127,6 +127,9 @@ export function cssPath(node) {
   let currentNode = node;
   while (currentNode) {
     const step = cssPathStep(currentNode, currentNode === node);
+    if(!step) {
+      break;
+    }
     
     steps.push(step);
     if (step.optimized) {
