@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-const puppeteer = require('puppeteer');
-
-const {
+import * as puppeteer from 'puppeteer';
+import {
   DOMModel,
   cssPath,
-} = require('./dom');
+} from './dom';
 
 (async () => {
   return new Promise(async resolve => {
@@ -34,7 +33,7 @@ const {
     const page = await browser.newPage();
     const session = await page.target().createCDPSession();
     session.on('DOM.setChildNodes', (e) => {
-      model.setChildNodes(e.parentId, e.nodes);
+      model.setChildNodes(e);
     });
     
     session.on('DOM.documentUpdated', async (e) => {
@@ -62,11 +61,11 @@ const {
     // Queue for events to allow processing them in order
     const events = [];
 
-    async function handleEvent(e) {
-      e = events.shift();
+    async function handleEvent() {
+      const e = events.shift();
       const node = model.get(e.nodeId);
       if (!node) return;
-      const selector = cssPath(node, true);
+      const selector = cssPath(node);
       if (!selector) return;
 
       if (e.name === 'change') {
@@ -79,7 +78,7 @@ const {
         console.log(`  await page.click('${selector}');`);
       }
 
-      if (e.length) {
+      if (events.length) {
         handleEvent();
       }
     }
