@@ -17,7 +17,8 @@
     "typescript": "^3.9.2"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc"
   },
   "author": "The Chromium Authors",
   "license": "Apache-2.0"
