@@ -53,6 +53,7 @@ export default async (url: string) => {
 
   // Get the initial document and initialse the model
   await session.send('DOM.enable');
+  await session.send('DOM.startDOMEventReport');
   const document = await session.send('DOM.getDocument');
   model.load(document);
 
@@ -66,7 +67,7 @@ export default async (url: string) => {
     const selector = cssPath(node);
     if (!selector) return;
 
-    if (e.name === 'change') {
+    if (e.type === 'change') {
       try {
         const value = await page.evaluate(selector => document.querySelector(selector).value, selector);
         console.log(`  await page.type('${selector}', '${value}');`);
