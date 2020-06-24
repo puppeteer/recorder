@@ -4,7 +4,7 @@
   "description": "Interactively record puppeteer scripts",
   "main": "lib/recorder.js",
   "bin": {
-    "puppeteer-recorder": "./cli.js"
+    "puppeteer-recorder": "./lib/cli.js"
   },
   "dependencies": {
     "jest": "^26.0.1",
@@ -14,11 +14,13 @@
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
+    "ts-node": "^8.10.2",
     "typescript": "^3.9.2"
   },
   "scripts": {
     "test": "jest",
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "ts-node ./src/cli.ts"
   },
   "author": "The Chromium Authors",
   "license": "Apache-2.0"

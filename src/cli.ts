@@ -18,4 +18,4 @@
 
 const [, , url] = process.argv;
 
-require('./lib/recorder').default(url);
+require('./recorder').default(url);
