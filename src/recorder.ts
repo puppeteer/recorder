@@ -17,28 +17,146 @@
  */
 
 import * as puppeteer from 'puppeteer';
-import {
-  DOMModel,
-  cssPath,
-} from './dom';
 
 export default async (url: string) => {
   const browser = await puppeteer.launch({
     headless: false,
     defaultViewport: null,
-    executablePath: '/usr/local/google/home/janscheffler/dev/chromium/src/out/Default/chrome',
   });
 
-  const model = new DOMModel();
   const page = await browser.newPage();
-  const session = await page.target().createCDPSession();
-  session.on('DOM.setChildNodes', (e) => {
-    model.setChildNodes(e);
-  });
+  const addLineToPuppeteerScript = (line: string) => {
+    console.log('  ' + line);
+  }
+  page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
+  page.evaluateOnNewDocument(async () => {
+    class Step {
+      public readonly value: string;
+      public readonly optimized: boolean;
 
-  session.on('DOM.documentUpdated', async (e) => {
-    const document = await session.send('DOM.getDocument');
-    model.load(document);
+      constructor(value, optimized) {
+        this.value = value;
+        this.optimized = optimized;
+      }
+      toString() {
+        return this.value;
+      }
+    }
+
+    function idSelector(id) {
+      return "#" + id;
+    }
+
+    function cssPathStep(node, isTargetNode) {
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return null;
+      }
+      const id = node.getAttribute("id");
+      if (id) {
+        return new Step(idSelector(id), true);
+      }
+      const nodeNameLower = node.nodeName.toLowerCase();
+      if (["html", "body", "head"].includes(nodeNameLower)) {
+        return new Step(node.nodeName, true);
+      }
+      const nodeName = node.nodeName;
+      const parent = node.parentNode;
+      if (!parent || parent.nodeType === Node.DOCUMENT_NODE) {
+        return new Step(nodeName, true);
+      }
+      let needsClassNames = false;
+      let needsNthChild = false;
+      let ownIndex = -1;
+      let elementIndex = -1;
+      const siblings = parent.children;
+      const ownClassNames = new Set(node.classList);
+      for (let i = 0; (ownIndex === -1 || !needsNthChild) && i < siblings.length; i++) {
+        const sibling = siblings[i];
+        if (sibling.nodeType !== Node.ELEMENT_NODE) {
+          continue;
+        }
+        elementIndex += 1;
+        if (sibling === node) {
+          ownIndex = elementIndex;
+          continue;
+        }
+        if (sibling.nodeName !== nodeName) {
+          continue;
+        }
+        needsClassNames = true;
+        if (!ownClassNames.size) {
+          needsNthChild = true;
+          continue;
+        }
+        const siblingClassNames = new Set(sibling.classList);
+        for (const siblingClass of siblingClassNames) {
+          if (!ownClassNames.has(siblingClass)) {
+            continue;
+          }
+          ownClassNames.delete(siblingClass);
+          if (!ownClassNames.size) {
+            needsNthChild = true;
+            break;
+          }
+        }
+      }
+      let result = nodeName;
+      if (isTargetNode &&
+        nodeName.toLowerCase() === "input" &&
+        node.getAttribute("type") &&
+        !node.getAttribute("id") &&
+        !node.getAttribute("class")) {
+        result += `[type="${node.getAttribute("type")}"]`;
+      }
+      if (needsNthChild) {
+        result += `:nth-child(${ownIndex + 1})`;
+      }
+      else if (needsClassNames) {
+        for (const className of ownClassNames) {
+          result += "." + className;
+        }
+      }
+      return new Step(result, false);
+    }
+
+    function cssPath(node) {
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return "";
+      }
+      const steps = [];
+      let currentNode = node;
+      while (currentNode) {
+        const step = cssPathStep(currentNode, currentNode === node);
+        if (!step) {
+          break;
+        }
+        steps.push(step);
+        if (step.optimized) {
+          break;
+        }
+        currentNode = currentNode.parentNode;
+      }
+      steps.reverse();
+      return steps.join(" > ");
+    }
+
+
+
+
+
+
+
+    window.addEventListener('click', (e) => {
+      const selector = cssPath(e.target);
+      addLineToPuppeteerScript(`await page.waitForSelector('${selector}', {visible: true});`);
+      addLineToPuppeteerScript(`await page.click('${selector}');`);
+    });
+
+    window.addEventListener('change', (e) => {
+      const selector = cssPath(e.target);
+      const value = (e.target as HTMLInputElement).value;
+      addLineToPuppeteerScript(`await page.type('${selector}', '${value}');`);
+    });
   });
 
   // Setup puppeteer
@@ -51,48 +169,9 @@ export default async (url: string) => {
   // Open the initial page
   await page.goto(url);
 
-  // Get the initial document and initialse the model
-  await session.send('DOM.enable');
-  await session.send('DOM.startDOMEventReport');
-  const document = await session.send('DOM.getDocument');
-  model.load(document);
-
-  // Queue for events to allow processing them in order
-  const events = [];
-
-  async function handleEvent() {
-    const e = events.shift();
-    const node = model.get(e.nodeId);
-    if (!node) return;
-    const selector = cssPath(node);
-    if (!selector) return;
-
-    if (e.type === 'change') {
-      try {
-        const value = await page.evaluate(selector => document.querySelector(selector).value, selector);
-        console.log(`  await page.type('${selector}', '${value}');`);
-      } catch (e) { }
-    } else if (e.name === 'click') {
-      console.log(`  await page.waitForSelector('${selector}', {visible: true});`);
-      console.log(`  await page.click('${selector}');`);
-    }
-
-    if (events.length) {
-      handleEvent();
-    }
-  }
-
-  // Enqueue every DOM event for processing
-  session.on('DOM.DOMEvent', async (e) => {
-    events.push(e);
-    if (events.length === 1) {
-      handleEvent();
-    }
-  });
-
   // Finish the puppeteer script
   return new Promise(resolve => {
-    browser.on('disconnected', () => {
+    browser.once('disconnected', () => {
       console.log(`})()`);
       resolve();
     });
