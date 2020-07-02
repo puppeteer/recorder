@@ -45,9 +45,9 @@ export default class DOMModel {
         parent.appendChild(node);
       }
 
-      stack.push(...(data.children || []));
-      stack.push(...(data.shadowRoots || []));
-      stack.push(...(data.pseudoElements || []));
+      if (data.children) stack.push(...data.children);
+      if (data.shadowRoots) stack.push(...data.shadowRoots);
+      if (data.pseudoElements) stack.push(...data.pseudoElements);
     }
   };
 
