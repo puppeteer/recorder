@@ -1,25 +1,29 @@
 {
-  "name": "puppeteer-recorder",
+  "name": "@pptr/recorder",
   "version": "0.0.1",
   "description": "Interactively record puppeteer scripts",
-  "main": "lib/recorder.js",
+  "main": "src/runner.js",
   "bin": {
     "puppeteer-recorder": "./lib/cli.js"
   },
   "dependencies": {
+    "aria-api": "^0.3.0",
     "jest": "^26.0.1",
     "prettier": "^2.0.5",
-    "puppeteer": "^3.0.2",
+    "puppeteer": "^4.0.1",
     "ts-jest": "^26.0.0"
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
+    "browserify": "^16.5.1",
     "ts-node": "^8.10.2",
+    "tsify": "^4.0.2",
     "typescript": "^3.9.2"
   },
   "scripts": {
     "test": "jest",
     "build": "tsc",
+    "build:browser": "browserify src/injected/index.ts -p tsify > lib/inject.js",
     "dev": "ts-node ./src/cli.ts"
   },
   "author": "The Chromium Authors",

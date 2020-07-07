@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * Copyright 2020 Google Inc. All rights reserved.
  *
@@ -17,6 +15,7 @@
  */
 
 import * as puppeteer from 'puppeteer';
+import { readFileSync } from 'fs';
 
 export default async (url: string) => {
   const browser = await puppeteer.launch({
@@ -24,147 +23,21 @@ export default async (url: string) => {
     defaultViewport: null,
   });
 
-  const page = await browser.newPage();
+  const page = await browser.pages().then(pages => pages[0]);
+
+  let identation = 0;
   const addLineToPuppeteerScript = (line: string) => {
-    console.log('  ' + line);
+    const data = '  '.repeat(identation) + line;
+    console.log(data);
   }
+
   page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
-  page.evaluateOnNewDocument(async () => {
-    class Step {
-      public readonly value: string;
-      public readonly optimized: boolean;
-
-      constructor(value, optimized) {
-        this.value = value;
-        this.optimized = optimized;
-      }
-      toString() {
-        return this.value;
-      }
-    }
-
-    function idSelector(id) {
-      return "#" + id;
-    }
-
-    function cssPathStep(node, isTargetNode) {
-      if (node.nodeType !== Node.ELEMENT_NODE) {
-        return null;
-      }
-      const id = node.getAttribute("id");
-      if (id) {
-        return new Step(idSelector(id), true);
-      }
-      const nodeNameLower = node.nodeName.toLowerCase();
-      if (["html", "body", "head"].includes(nodeNameLower)) {
-        return new Step(node.nodeName, true);
-      }
-      const nodeName = node.nodeName;
-      const parent = node.parentNode;
-      if (!parent || parent.nodeType === Node.DOCUMENT_NODE) {
-        return new Step(nodeName, true);
-      }
-      let needsClassNames = false;
-      let needsNthChild = false;
-      let ownIndex = -1;
-      let elementIndex = -1;
-      const siblings = parent.children;
-      const ownClassNames = new Set(node.classList);
-      for (let i = 0; (ownIndex === -1 || !needsNthChild) && i < siblings.length; i++) {
-        const sibling = siblings[i];
-        if (sibling.nodeType !== Node.ELEMENT_NODE) {
-          continue;
-        }
-        elementIndex += 1;
-        if (sibling === node) {
-          ownIndex = elementIndex;
-          continue;
-        }
-        if (sibling.nodeName !== nodeName) {
-          continue;
-        }
-        needsClassNames = true;
-        if (!ownClassNames.size) {
-          needsNthChild = true;
-          continue;
-        }
-        const siblingClassNames = new Set(sibling.classList);
-        for (const siblingClass of siblingClassNames) {
-          if (!ownClassNames.has(siblingClass)) {
-            continue;
-          }
-          ownClassNames.delete(siblingClass);
-          if (!ownClassNames.size) {
-            needsNthChild = true;
-            break;
-          }
-        }
-      }
-      let result = nodeName;
-      if (isTargetNode &&
-        nodeName.toLowerCase() === "input" &&
-        node.getAttribute("type") &&
-        !node.getAttribute("id") &&
-        !node.getAttribute("class")) {
-        result += `[type="${node.getAttribute("type")}"]`;
-      }
-      if (needsNthChild) {
-        result += `:nth-child(${ownIndex + 1})`;
-      }
-      else if (needsClassNames) {
-        for (const className of ownClassNames) {
-          result += "." + className;
-        }
-      }
-      return new Step(result, false);
-    }
-
-    function cssPath(node) {
-      if (node.nodeType !== Node.ELEMENT_NODE) {
-        return "";
-      }
-      const steps = [];
-      let currentNode = node;
-      while (currentNode) {
-        const step = cssPathStep(currentNode, currentNode === node);
-        if (!step) {
-          break;
-        }
-        steps.push(step);
-        if (step.optimized) {
-          break;
-        }
-        currentNode = currentNode.parentNode;
-      }
-      steps.reverse();
-      return steps.join(" > ");
-    }
-
-
-
-
-
-
-
-    window.addEventListener('click', (e) => {
-      const selector = cssPath(e.target);
-      addLineToPuppeteerScript(`await page.waitForSelector('${selector}', {visible: true});`);
-      addLineToPuppeteerScript(`await page.click('${selector}');`);
-    });
-
-    window.addEventListener('change', (e) => {
-      const selector = cssPath(e.target);
-      const value = (e.target as HTMLInputElement).value;
-      addLineToPuppeteerScript(`await page.type('${selector}', '${value}');`);
-    });
-  });
+  page.evaluateOnNewDocument(readFileSync('./lib/inject.js', { encoding: 'utf-8' }));
 
   // Setup puppeteer
-  console.log(`const puppeteer = require('puppeteer');`)
-  console.log(`(async () => {`);
-  console.log(`  const browser = await puppeteer.launch({headless: false, defaultViewport: null});`);
-  console.log(`  const page = await browser.newPage();`);
-  console.log(`  await page.goto('${url}');`);
+  addLineToPuppeteerScript(`const {open, click, type, submit} = require('@pptr/recorder');`)
+  addLineToPuppeteerScript(`open('${url}', async () => {`);
+  identation += 1;
 
   // Open the initial page
   await page.goto(url);
@@ -172,7 +45,8 @@ export default async (url: string) => {
   // Finish the puppeteer script
   return new Promise(resolve => {
     browser.once('disconnected', () => {
-      console.log(`})()`);
+      identation -= 1;
+      addLineToPuppeteerScript(`})`);
       resolve();
     });
   });

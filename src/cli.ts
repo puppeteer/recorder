@@ -18,4 +18,9 @@
 
 const [, , url] = process.argv;
 
-require('./recorder').default(url);
+if (!url) {
+  console.error('url required.');
+  process.exit(1);
+} else {
+  require('./recorder').default(url);
+}

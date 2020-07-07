@@ -14,60 +14,54 @@
  * limitations under the License.
  */
 
-import { DOMNode, DOMNodeType } from './dom';
+/**
+ * This implementation heavily inspired by DevTools DOMPath implementation:
+ * https://source.chromium.org/chromium/chromium/src/+/master:third_party/devtools-frontend/src/front_end/elements/DOMPath.js
+ */
 
 class Step {
   public readonly value: string;
   public readonly optimized: boolean;
 
-  constructor(value: string, optimized: boolean) {
+  constructor(value, optimized) {
     this.value = value;
     this.optimized = optimized;
   }
-
   toString() {
     return this.value;
   }
 }
 
-function idSelector(id: string) {
+function idSelector(id) {
   return "#" + id;
 }
 
-function cssPathStep(node: DOMNode, isTargetNode: boolean) {
-  if (node.nodeType !== DOMNodeType.ELEMENT_NODE) {
+function cssPathStep(node, isTargetNode) {
+  if (node.nodeType !== Node.ELEMENT_NODE) {
     return null;
   }
-
   const id = node.getAttribute("id");
   if (id) {
     return new Step(idSelector(id), true);
   }
-
   const nodeNameLower = node.nodeName.toLowerCase();
   if (["html", "body", "head"].includes(nodeNameLower)) {
-    return new Step(node.nodeName, true);
+    return new Step(nodeNameLower, true);
   }
   const nodeName = node.nodeName;
-
   const parent = node.parentNode;
-  if (!parent || parent.nodeType === DOMNodeType.DOCUMENT_NODE) {
-    return new Step(nodeName, true);
+  if (!parent || parent.nodeType === Node.DOCUMENT_NODE) {
+    return new Step(nodeNameLower, true);
   }
-
   let needsClassNames = false;
   let needsNthChild = false;
   let ownIndex = -1;
   let elementIndex = -1;
   const siblings = parent.children;
   const ownClassNames = new Set(node.classList);
-  for (
-    let i = 0;
-    (ownIndex === -1 || !needsNthChild) && i < siblings.length;
-    i++
-  ) {
+  for (let i = 0; (ownIndex === -1 || !needsNthChild) && i < siblings.length; i++) {
     const sibling = siblings[i];
-    if (sibling.nodeType !== DOMNodeType.ELEMENT_NODE) {
+    if (sibling.nodeType !== Node.ELEMENT_NODE) {
       continue;
     }
     elementIndex += 1;
@@ -78,13 +72,11 @@ function cssPathStep(node: DOMNode, isTargetNode: boolean) {
     if (sibling.nodeName !== nodeName) {
       continue;
     }
-    
     needsClassNames = true;
     if (!ownClassNames.size) {
       needsNthChild = true;
       continue;
     }
-
     const siblingClassNames = new Set(sibling.classList);
     for (const siblingClass of siblingClassNames) {
       if (!ownClassNames.has(siblingClass)) {
@@ -97,20 +89,18 @@ function cssPathStep(node: DOMNode, isTargetNode: boolean) {
       }
     }
   }
-
-  let result = nodeName;
-  if (
-    isTargetNode &&
+  let result = nodeNameLower;
+  if (isTargetNode &&
     nodeName.toLowerCase() === "input" &&
     node.getAttribute("type") &&
     !node.getAttribute("id") &&
-    !node.getAttribute("class")
-  ) {
+    !node.getAttribute("class")) {
     result += `[type="${node.getAttribute("type")}"]`;
   }
   if (needsNthChild) {
     result += `:nth-child(${ownIndex + 1})`;
-  } else if (needsClassNames) {
+  }
+  else if (needsClassNames) {
     for (const className of ownClassNames) {
       result += "." + className;
     }
@@ -119,26 +109,22 @@ function cssPathStep(node: DOMNode, isTargetNode: boolean) {
 }
 
 export function cssPath(node) {
-  if (node.nodeType !== DOMNodeType.ELEMENT_NODE) {
+  if (node.nodeType !== Node.ELEMENT_NODE) {
     return "";
   }
-
   const steps = [];
   let currentNode = node;
   while (currentNode) {
     const step = cssPathStep(currentNode, currentNode === node);
-    if(!step) {
+    if (!step) {
       break;
     }
-    
     steps.push(step);
     if (step.optimized) {
       break;
     }
-
     currentNode = currentNode.parentNode;
   }
-
   steps.reverse();
   return steps.join(" > ");
 }

@@ -1,9 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`DOMMode should return a string representing the dom tree 1`] = `
-"#document
-  html
-  HTML
-    HEAD
-    BODY"
-`;
