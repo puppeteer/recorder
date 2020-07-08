@@ -25,11 +25,10 @@ export const getSelector = (e: HTMLElement) => {
 
   const closest = e.closest('a,button');
   const closestName = closest && getName(closest);
-  if (closestName && closestName.includes(e.textContent)) {
+  if (e.textContent && closestName && closestName.includes(e.textContent)) {
     const operator = closestName === e.textContent ? 'ariaName' : 'ariaNameContains';
     return `${operator}/${e.textContent}`;
   }
 
-  // @ts-ignore
   return cssPath(e);
 }
