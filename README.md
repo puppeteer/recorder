@@ -14,3 +14,9 @@ npx puppeteer-recorder [url]
 
 will start a new browser in which every interaction with the page will be recorded and printed to the console as 
 a puppeteer script.
+
+## Known limitations
+
+There are a number of known limitations:
+- It's currently not possible to record interactions inside of shadow doms
+- It only records clicks, changes to text fields and form submits for now
