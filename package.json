@@ -22,7 +22,8 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "tsc",
+    "build": "npm run build:node && npm run build:browser",
+    "build:node": "tsc",
     "build:browser": "browserify src/injected/index.ts -p tsify > lib/inject.js",
     "dev": "ts-node ./src/cli.ts"
   },
