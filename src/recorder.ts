@@ -19,6 +19,10 @@ import { readFileSync } from 'fs';
 import * as path from 'path';
 
 export default async (url: string) => {
+  if (!url.startsWith('http')) {
+    url = 'https://' + url;
+  }
+
   const browser = await puppeteer.launch({
     headless: false,
     defaultViewport: null,
