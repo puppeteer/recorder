@@ -50,5 +50,5 @@ When running the recorded scripts, make sure the package is available in their n
 ## Known limitations
 
 There are a number of known limitations:
-- It's currently not possible to record interactions inside of shadow doms
+- It's currently not possible to record interactions inside of [shadow doms](https://github.com/puppeteer/recorder/issues/4)
 - It only records clicks, changes to text fields and form submits for now
