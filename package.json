@@ -6,6 +6,10 @@
   "bin": {
     "puppeteer-recorder": "./lib/cli.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/puppeteer/recorder.git"
+  },
   "dependencies": {
     "aria-api": "^0.3.0",
     "jest": "^26.0.1",
