@@ -16,6 +16,7 @@
 
 import * as puppeteer from 'puppeteer';
 import { readFileSync } from 'fs';
+import * as path from 'path';
 
 export default async (url: string) => {
   const browser = await puppeteer.launch({
@@ -32,7 +33,7 @@ export default async (url: string) => {
   }
 
   page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
-  page.evaluateOnNewDocument(readFileSync('./lib/inject.js', { encoding: 'utf-8' }));
+  page.evaluateOnNewDocument(readFileSync(path.join(__dirname, '../lib/inject.js'), { encoding: 'utf-8' }));
 
   // Setup puppeteer
   addLineToPuppeteerScript(`const {open, click, type, submit} = require('@pptr/recorder');`)

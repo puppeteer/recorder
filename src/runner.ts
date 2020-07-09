@@ -17,8 +17,9 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const timers = require('timers');
+const path = require('path');
 
-const aria = fs.readFileSync('./node_modules/aria-api/dist/aria.js', { encoding: 'utf8' });
+const aria = fs.readFileSync(path.join(__dirname, '../node_modules/aria-api/dist/aria.js'), { encoding: 'utf8' });
 
 const ariaName = new Function('element', 'selector', `
   // Inject the aria library in case it has not been loaded yet
