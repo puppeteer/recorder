@@ -2,7 +2,7 @@
   "name": "@pptr/recorder",
   "version": "0.0.1",
   "description": "Interactively record puppeteer scripts",
-  "main": "src/runner.js",
+  "main": "./lib/runner.js",
   "bin": {
     "puppeteer-recorder": "./lib/cli.js"
   },

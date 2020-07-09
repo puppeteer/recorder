@@ -56,13 +56,6 @@ puppeteer.__experimental_registerCustomQueryHandler('ariaNameContains', ariaName
 
 const timeout = t => new Promise(cb => timers.setTimeout(cb, t));
 
-const debug = async (selector) => {
-  console.log(await page.$eval(selector, e => ({
-    tagName: e.tagName,
-    attributes: Array.from(e.attributes).reduce((prev, curr) => ({ ...prev, [curr.nodeName]: [curr.nodeValue] }), {}),
-  })));
-}
-
 let browser, page;
 const delay = 100;
 module.exports = {
