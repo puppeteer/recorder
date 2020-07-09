@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-const timers = require('timers');
-const path = require('path');
+import * as fs from 'fs';
+import * as timers from 'timers';
+import * as path from 'path';
+import * as puppeteer from 'puppeteer';
+
+declare const __dirname;
 
 const aria = fs.readFileSync(path.join(__dirname, '../node_modules/aria-api/dist/aria.js'), { encoding: 'utf8' });
 
@@ -58,35 +60,42 @@ puppeteer.__experimental_registerCustomQueryHandler('ariaNameContains', ariaName
 const timeout = t => new Promise(cb => timers.setTimeout(cb, t));
 
 let browser, page;
-const delay = 100;
-module.exports = {
-  async open(url, cb) {
-    browser = await puppeteer.launch({ headless: false, defaultViewport: null });
-    const pages = await browser.pages();
-    page = pages[0];
-    await page.evaluateOnNewDocument(aria);
-    await page.goto(url);
-    await timeout(1000);
-    await cb(page, browser);
-    await browser.close();
-  },
-  async click(selector) {
-    await timeout(delay);
-    console.log('click', selector);
-    const element = await page.waitForSelector(selector);
-    await element.click();
-  },
-  async type(selector, value) {
-    await timeout(delay);
-    console.log('type', selector, value);
-    const element = await page.waitForSelector(selector);
-    await element.click({ clickCount: 3 });
-    await element.press('Backspace');
-    await element.type(value);
-  },
-  async submit(selector) {
-    await timeout(delay);
-    console.log('submit', selector);
-    await page.$eval(selector, form => form.requestSubmit());
-  }
+let delay = 100;
+
+interface RunnerOptions {
+  delay: number
+}
+
+export async function open(url, options: RunnerOptions, cb) {
+  delay = options.delay || 100;
+  browser = await puppeteer.launch({ headless: false, defaultViewport: null });
+  const pages = await browser.pages();
+  page = pages[0];
+  await page.evaluateOnNewDocument(aria);
+  await page.goto(url);
+  await timeout(1000);
+  await cb(page, browser);
+  await browser.close();
+}
+
+export async function click(selector) {
+  await timeout(delay);
+  console.log('click', selector);
+  const element = await page.waitForSelector(selector);
+  await element.click();
+}
+
+export async function type(selector, value) {
+  await timeout(delay);
+  console.log('type', selector, value);
+  const element = await page.waitForSelector(selector);
+  await element.click({ clickCount: 3 });
+  await element.press('Backspace');
+  await element.type(value);
+}
+
+export async function submit(selector) {
+  await timeout(delay);
+  console.log('submit', selector);
+  await page.$eval(selector, form => form.requestSubmit());
 }

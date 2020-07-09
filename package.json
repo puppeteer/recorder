@@ -15,11 +15,12 @@
     "puppeteer": "^5.0.0"
   },
   "devDependencies": {
-    "jest": "^26.0.1",
-    "ts-jest": "^26.0.0",
-    "prettier": "^2.0.5",
     "@types/jest": "^25.2.3",
+    "@types/node": "^14.0.20",
     "browserify": "^16.5.1",
+    "jest": "^26.0.1",
+    "prettier": "^2.0.5",
+    "ts-jest": "^26.0.0",
     "ts-node": "^8.10.2",
     "tsify": "^4.0.2",
     "typescript": "^3.9.2"
