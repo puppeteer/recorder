@@ -54,4 +54,12 @@ describe('Injected Script', () => {
     element.dispatchEvent(new Event('change', { bubbles: true }));
     expect(fn).toHaveBeenCalledWith(`await type('body > form > input', 'Hello World');`);
   });
+
+  it('should emit type lines with correctly escaped single quotes', () => {
+    document.body.innerHTML = `<form onsubmit="return false;"><input data-id="test"/></form>`;
+    const element = document.querySelector('[data-id="test"]') as HTMLInputElement;
+    element.value = 'You\'re welcome';
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(fn).toHaveBeenCalledWith(`await type('body > form > input', 'You\\'re welcome');`);
+  });
 });

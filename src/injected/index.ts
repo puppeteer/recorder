@@ -36,8 +36,9 @@ window.addEventListener('click', (e) => {
 
 window.addEventListener('change', (e) => {
   const value = (e.target as HTMLInputElement).value;
+  const escapedValue = value.replace(/'/g, '\\\'');
   const selector = getSelector(e.target as HTMLElement);
-  addLineToPuppeteerScript(`await type('${selector}', '${value}');`);
+  addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
 }, true);
 
 window.addEventListener('submit', (e) => {
