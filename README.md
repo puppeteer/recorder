@@ -47,6 +47,10 @@ to compile the _injected script_, the _recorder_ and the _runner_.
 By running `npm link`, the package will become available to be run via `npx`.
 When running the recorded scripts, make sure the package is available in their node_modules folder by using `npm link @pptr/recorder`.
 
+## Debugging
+
+Use the runner with `DEBUG=1` to execute the script line by line.
+
 ## Known limitations
 
 There are a number of known limitations:

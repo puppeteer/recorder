@@ -18,6 +18,7 @@ import * as fs from 'fs';
 import * as timers from 'timers';
 import * as path from 'path';
 import * as puppeteer from 'puppeteer';
+import * as readline from 'readline';
 
 declare const __dirname;
 
@@ -61,9 +62,29 @@ const timeout = t => new Promise(cb => timers.setTimeout(cb, t));
 
 let browser, page;
 let delay = 100;
+const debug = process.env.DEBUG;
 
 interface RunnerOptions {
   delay: number
+}
+
+async function beforeStep(...args) {
+  console.log(...args);
+
+  if(!debug) {
+    await timeout(delay);
+    return;
+  }
+  
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  await new Promise(resolve => rl.question('Press enter to execute this step?', ans => {
+    rl.close();
+    resolve(ans);
+  }));
 }
 
 export async function open(url, options: RunnerOptions, cb) {
@@ -79,15 +100,13 @@ export async function open(url, options: RunnerOptions, cb) {
 }
 
 export async function click(selector) {
-  await timeout(delay);
-  console.log('click', selector);
+  await beforeStep('click', selector);
   const element = await page.waitForSelector(selector);
   await element.click();
 }
 
 export async function type(selector, value) {
-  await timeout(delay);
-  console.log('type', selector, value);
+  await beforeStep('type', selector, value);
   const element = await page.waitForSelector(selector);
   await element.click({ clickCount: 3 });
   await element.press('Backspace');
@@ -95,7 +114,6 @@ export async function type(selector, value) {
 }
 
 export async function submit(selector) {
-  await timeout(delay);
-  console.log('submit', selector);
+  await beforeStep('submit', selector);
   await page.$eval(selector, form => form.requestSubmit());
 }
