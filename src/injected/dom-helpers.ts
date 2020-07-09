@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-import { getName } from 'aria-api';
+import { getName, getRole } from 'aria-api';
 import { cssPath } from './css-path';
 
 export const isSubmitButton = (e: HTMLElement) => e.tagName === 'BUTTON' && (e as HTMLButtonElement).type === 'submit' && (e as HTMLButtonElement).form !== null;
 
 export const getSelector = (e: HTMLElement) => {
   const name = getName(e);
-  if (name) return `ariaName/${name}`;
+  const role = getRole(e);
+  if (name) return `aria/${role}[name="${name}"]`;
 
   const closest = e.closest('a,button');
   const closestName = closest && getName(closest);
-  if (e.textContent && closestName && closestName.includes(e.textContent)) {
-    const operator = closestName === e.textContent ? 'ariaName' : 'ariaNameContains';
-    return `${operator}/${e.textContent}`;
+  const closestRole = closest && getRole(closest);
+  if (closestName && (!e.textContent || closestName.includes(e.textContent))) {
+    const operator = (!e.textContent || e.textContent === closestName) ? '=' : '*=';
+    return `aria/${closestRole}[name${operator}"${e.textContent || closestName}"]`;
   }
 
   return cssPath(e);

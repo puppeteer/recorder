@@ -42,21 +42,21 @@ describe('DOM', () => {
       document.body.innerHTML = `<form><button id="button">Hello World</button></form>`;
 
       const element = document.getElementById('button') as any;
-      expect(getSelector(element)).toBe('ariaName/Hello World');
+      expect(getSelector(element)).toBe('aria/button[name="Hello World"]');
     });
 
     it('should return an aria name selector for the closest link or button', () => {
       document.body.innerHTML = `<form><button><span id="button">Hello World</span></button></form>`;
 
       const element = document.getElementById('button') as any;
-      expect(getSelector(element)).toBe('ariaName/Hello World');
+      expect(getSelector(element)).toBe('aria/button[name="Hello World"]');
     });
 
     it('should return an aria name like selector for the closest link or button if the text is not an exact match', () => {
       document.body.innerHTML = `<form><button><span id="button">Hello</span> World</button></form>`;
 
       const element = document.getElementById('button') as any;
-      expect(getSelector(element)).toBe('ariaNameContains/Hello');
+      expect(getSelector(element)).toBe('aria/button[name*="Hello"]');
     });
 
     it('should return css selector if the element is not identifiable by an aria selector', () => {

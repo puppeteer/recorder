@@ -37,7 +37,7 @@ describe('Injected Script', () => {
     document.body.innerHTML = `<div><button data-id="test">Hello World</button></div>`;
     const element = document.querySelector('[data-id="test"]') as HTMLButtonElement;
     element.click();
-    expect(fn).toHaveBeenCalledWith(`await click('ariaName/Hello World');`);
+    expect(fn).toHaveBeenCalledWith(`await click('aria/button[name="Hello World"]');`);
   });
 
   it('should only emit submit line for click events on submit buttons in forms', () => {

@@ -24,14 +24,24 @@ declare const __dirname;
 
 const aria = fs.readFileSync(path.join(__dirname, '../node_modules/aria-api/dist/aria.js'), { encoding: 'utf8' });
 
-const ariaName = new Function('element', 'selector', `
+const ariaSelectorEngine = new Function('element', 'selector', `
   // Inject the aria library in case it has not been loaded yet
   if(!globalThis.aria) {${aria}}
+
+  // Backslashes have to be escaped here 
+  const m = /(?<role>\\w+)\\[(?<attribute>\\w+)(?<operator>=|\\*=)"(?<value>.+)"\\]/.exec(selector);
+  if(!m) throw new Error('Invalid aria selector: ' + selector); 
+  const [, role, attribute, operator, value] = m;
+  if(attribute !== 'name') throw new Error('Only name is currently supported as an aria attribute.');
 
   const elements = document.getElementsByTagName('*');
   for(const element of elements) {
     if(!element.parentElement) continue;
-    if(aria.getName(element) === selector) {
+    if(aria.getRole(element) !== role) continue;
+    const name = aria.getName(element);
+    if(operator === '*=' && name.includes(value)) {
+      return element;
+    } else if(name === value) {
       return element;
     }
   }
@@ -39,24 +49,7 @@ const ariaName = new Function('element', 'selector', `
   return null;
 `);
 
-puppeteer.__experimental_registerCustomQueryHandler('ariaName', ariaName);
-
-const ariaNameContains = new Function('element', 'selector', `
-  // Inject the aria library in case it has not been loaded yet
-  if(!globalThis.aria) {${aria}}
-
-  const elements = document.getElementsByTagName('*');
-  for(const element of elements) {
-    if(!element.parentElement) continue;
-    if(aria.getName(element).includes(selector)) {
-      return element;
-    }
-  }
-
-  return null;
-`);
-
-puppeteer.__experimental_registerCustomQueryHandler('ariaNameContains', ariaNameContains);
+puppeteer.__experimental_registerCustomQueryHandler('aria', ariaSelectorEngine);
 
 const timeout = t => new Promise(cb => timers.setTimeout(cb, t));
 
