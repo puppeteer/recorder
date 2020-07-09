@@ -60,9 +60,14 @@ puppeteer.__experimental_registerCustomQueryHandler('ariaNameContains', ariaName
 const timeout = t => new Promise(cb => timers.setTimeout(cb, t));
 
 let browser, page;
-const delay = 100;
+let delay = 100;
 
-export async function open(url, cb) {
+interface RunnerOptions {
+  delay: number
+}
+
+export async function open(url, options: RunnerOptions, cb) {
+  delay = options.delay || 100;
   browser = await puppeteer.launch({ headless: false, defaultViewport: null });
   const pages = await browser.pages();
   page = pages[0];

@@ -37,7 +37,7 @@ export default async (url: string) => {
 
   // Setup puppeteer
   addLineToPuppeteerScript(`const {open, click, type, submit} = require('@pptr/recorder');`)
-  addLineToPuppeteerScript(`open('${url}', async () => {`);
+  addLineToPuppeteerScript(`open('${url}', {}, async () => {`);
   identation += 1;
 
   // Open the initial page
