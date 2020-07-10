@@ -40,6 +40,8 @@ export default async (url: string) => {
 
   let script = readFileSync(path.join(__dirname, '../lib/inject.js'), { encoding: 'utf-8' })
   script = script.replace(`var childNodes = [];`, `var childNodes = Array.from(node.shadowRoot?.childNodes || []).filter(n => !getOwner(n) && !isHidden(n))`);
+  // Todo(https://github.com/puppeteer/recorder/issues/15): Check if this is the right approach
+  script = script.replace(`'input[type="text"]:not([list])',`, `'input[type="text"]:not([list])',\n'input[type="password"]:not([list])',`);
   page.evaluateOnNewDocument(script);
 
   // Setup puppeteer
