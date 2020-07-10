@@ -37,7 +37,10 @@ export default async (url: string) => {
   }
 
   page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
-  page.evaluateOnNewDocument(readFileSync(path.join(__dirname, '../lib/inject.js'), { encoding: 'utf-8' }));
+
+  let script = readFileSync(path.join(__dirname, '../lib/inject.js'), { encoding: 'utf-8' })
+  script = script.replace(`var childNodes = [];`, `var childNodes = Array.from(node.shadowRoot?.childNodes || []).filter(n => !getOwner(n) && !isHidden(n))`);
+  page.evaluateOnNewDocument(script);
 
   // Setup puppeteer
   addLineToPuppeteerScript(`const {open, click, type, submit} = require('@pptr/recorder');`)

@@ -65,5 +65,19 @@ describe('DOM', () => {
       const element = document.getElementById('button') as any;
       expect(getSelector(element)).toBe('#button');
     });
+
+    // This is currently not testable because it relies on hot patching the aria-api module
+    it.skip('should pierce shadow roots to get an aria name', () => {
+      const link = document.createElement('a');
+      document.body.appendChild(link);
+      const span1 = document.createElement('span');
+      link.appendChild(span1);
+      const shadow = span1.attachShadow({mode: 'open'});
+      const span2 = document.createElement('span');
+      span2.textContent = 'Hello World';
+      shadow.appendChild(span2);
+
+      expect(getSelector(link)).toBe('aria/link[name="Hello World"]');
+    });
   });
 });

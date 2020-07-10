@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { getSelector, isSubmitButton } from './dom-helpers';
+import { isSubmitButton, getSelectorForEvent } from './dom-helpers';
 
 declare global {
   function addLineToPuppeteerScript(line: string): void;
@@ -30,18 +30,18 @@ window.addEventListener('click', (e) => {
     currentElement = currentElement.parentElement;
   }
 
-  const selector = getSelector(e.target as HTMLElement);
+  const selector = getSelectorForEvent(e);
   addLineToPuppeteerScript(`await click('${selector}');`);
 }, true);
 
 window.addEventListener('change', (e) => {
   const value = (e.target as HTMLInputElement).value;
   const escapedValue = value.replace(/'/g, '\\\'');
-  const selector = getSelector(e.target as HTMLElement);
+  const selector = getSelectorForEvent(e);
   addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
 }, true);
 
 window.addEventListener('submit', (e) => {
-  const selector = getSelector(e.target as HTMLElement);
+  const selector = getSelectorForEvent(e);
   addLineToPuppeteerScript(`await submit('${selector}');`);
 }, true);

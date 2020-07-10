@@ -22,7 +22,9 @@ import * as readline from 'readline';
 
 declare const __dirname;
 
-const aria = fs.readFileSync(path.join(__dirname, '../node_modules/aria-api/dist/aria.js'), { encoding: 'utf8' });
+let aria = fs.readFileSync(path.join(__dirname, '../node_modules/aria-api/dist/aria.js'), { encoding: 'utf8' });
+
+aria = aria.replace(`var childNodes = [];`, `var childNodes = Array.from(node.shadowRoot?.childNodes || []).filter(n => !getOwner(n) && !isHidden(n))`);
 
 const ariaSelectorEngine = new Function('element', 'selector', `
   // Inject the aria library in case it has not been loaded yet
@@ -34,7 +36,24 @@ const ariaSelectorEngine = new Function('element', 'selector', `
   const [, role, attribute, operator, value] = m;
   if(attribute !== 'name') throw new Error('Only name is currently supported as an aria attribute.');
 
-  const elements = document.getElementsByTagName('*');
+  const elements = [];
+  const collect = (root) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+    do {
+      const currentNode = walker.currentNode;
+      if (currentNode.shadowRoot) {
+        collect(currentNode.shadowRoot);
+      }
+      // We're only interested in actual elements that we can later use for selector
+      // matching, so skip shadow roots.
+      if (!(currentNode instanceof ShadowRoot)) {
+        elements.push(currentNode);
+      }
+    } while (walker.nextNode());
+  };
+
+  collect(document.body);
+
   for(const element of elements) {
     if(!element.parentElement) continue;
     if(aria.getRole(element) !== role) continue;
