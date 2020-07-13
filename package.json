@@ -18,6 +18,7 @@
     "@types/jest": "^25.2.3",
     "@types/node": "^14.0.20",
     "browserify": "^16.5.1",
+    "express": "^4.17.1",
     "jest": "^26.0.1",
     "prettier": "^2.0.5",
     "ts-jest": "^26.0.0",
