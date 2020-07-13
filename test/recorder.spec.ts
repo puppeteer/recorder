@@ -25,61 +25,61 @@ import * as express from "express";
 import { Readable } from "stream";
 
 describe("Recorder", () => {
-    let browser, page, app, url, server;
-    
-    async function getScriptFromStream(stream: Readable) {
-        let script = "";
-        stream.on("data", (data) => {
-            script += data;
-        });
-    
-        await new Promise((r) => stream.once("end", r));
-    
-        return script.replace(url, "[url]");
-    }
+  let browser, page, app, url, server;
 
-    beforeAll(async () => {
-        browser = await puppeteer.launch({
-            defaultViewport: null,
-            headless: false,
-        });
-
-        app = express();
-        app.use(express.static(__dirname + "/public"));
-        return new Promise((resolve) => {
-            server = app.listen(0, "127.0.0.1", () => {
-                url = `http://localhost:${server.address().port}/`;
-                resolve();
-            });
-        });
+  async function getScriptFromStream(stream: Readable) {
+    let script = "";
+    stream.on("data", (data) => {
+      script += data;
     });
 
-    afterAll(async () => {
-        await browser.close();
-        await server.close();
+    await new Promise((r) => stream.once("end", r));
+
+    return script.replace(url, "[url]");
+  }
+
+  beforeAll(async () => {
+    browser = await puppeteer.launch({
+      defaultViewport: null,
+      headless: false,
     });
 
-    beforeEach(async () => {
-        const prevPage = await browser.pages().then((pages) => pages[0]);
-        page = await browser.newPage();
-        await prevPage.close();
+    app = express();
+    app.use(express.static(__dirname + "/public"));
+    return new Promise((resolve) => {
+      server = app.listen(0, "127.0.0.1", () => {
+        url = `http://localhost:${server.address().port}/`;
+        resolve();
+      });
+    });
+  });
+
+  afterAll(async () => {
+    await browser.close();
+    await server.close();
+  });
+
+  beforeEach(async () => {
+    const prevPage = await browser.pages().then((pages) => pages[0]);
+    page = await browser.newPage();
+    await prevPage.close();
+  });
+
+  it("should record a simple test", async () => {
+    const output = await recorder(url, {
+      wsEndpoint: browser.wsEndpoint(),
     });
 
-    it("should record a simple test", async () => {
-        const output = await recorder(url, {
-            wsEndpoint: browser.wsEndpoint(),
-        });
+    await page.click("#test");
+    await browser.newPage();
+    await page.close();
 
-        await page.click("#test");
-        await browser.newPage();
-        await page.close();
-
-        await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
+    await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
             "const {open, click, type, submit} = require('@pptr/recorder');
             open('[url]', {}, async () => {
               await click('aria/link[name=\\"Test Link\\"]');
-            })
+            });
             "
           `);
-    });
+  });
 });
