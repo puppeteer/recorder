@@ -22,5 +22,7 @@ if (!url) {
   console.error('url required.');
   process.exit(1);
 } else {
-  require('./recorder').default(url);
+  require('./recorder').default(url).then(output => {
+    output.pipe(process.stdout);
+  });
 }

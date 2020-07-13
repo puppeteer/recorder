@@ -16,24 +16,40 @@
 
 import * as puppeteer from 'puppeteer';
 import { readFileSync } from 'fs';
+import { Writable, Readable } from 'stream';
 import * as path from 'path';
 
-export default async (url: string) => {
+interface RecorderOptions {
+  wsEndpoint?: string
+}
+
+async function getBrowserInstance(options: RecorderOptions) {
+  if (options && options.wsEndpoint) {
+    return puppeteer.connect({ browserWSEndpoint: options.wsEndpoint });
+  } else {
+    return puppeteer.launch({
+      headless: false,
+      defaultViewport: null,
+    });
+  }
+}
+
+export default async (url: string, options: RecorderOptions = {}) => {
   if (!url.startsWith('http')) {
     url = 'https://' + url;
   }
 
-  const browser = await puppeteer.launch({
-    headless: false,
-    defaultViewport: null,
+  const output = new Readable({
+    read(size) { },
   });
-
+  output.setEncoding('utf8');
+  const browser = await getBrowserInstance(options);
   const page = await browser.pages().then(pages => pages[0]);
 
   let identation = 0;
   const addLineToPuppeteerScript = (line: string) => {
     const data = '  '.repeat(identation) + line;
-    console.log(data);
+    output.push(data + '\n');
   }
 
   page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
@@ -53,11 +69,17 @@ export default async (url: string) => {
   await page.goto(url);
 
   // Finish the puppeteer script
-  return new Promise(resolve => {
-    browser.once('disconnected', () => {
-      identation -= 1;
-      addLineToPuppeteerScript(`})`);
-      resolve();
-    });
+  page.on('close', async () => {
+    identation -= 1;
+    addLineToPuppeteerScript(`})`);
+    output.push(null);
+
+    // In case we started the browser instance
+    if(!options.wsEndpoint) {
+      // Close it
+      await browser.close();
+    }
   });
+
+  return output;
 }
