@@ -62,17 +62,25 @@ export default async (url: string, options: RecorderOptions = {}) => {
   // Open the initial page
   await page.goto(url);
 
-  // Finish the puppeteer script
-  page.on('close', async () => {
+
+  async function close() {
     identation -= 1;
     addLineToPuppeteerScript(`});`);
     output.push(null);
 
     // In case we started the browser instance
-    if(!options.wsEndpoint) {
+    if (!options.wsEndpoint) {
       // Close it
       await browser.close();
     }
+  }
+
+  // Finish the puppeteer script when the page is closed
+  page.on('close', close);
+  // Or if the user stops the script
+  process.on('SIGINT', async () => {
+    await close();
+    process.exit();
   });
 
   return output;
