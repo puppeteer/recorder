@@ -41,7 +41,7 @@ describe("Recorder", () => {
   beforeAll(async () => {
     browser = await puppeteer.launch({
       defaultViewport: null,
-      headless: false,
+      headless: true,
     });
 
     app = express();
