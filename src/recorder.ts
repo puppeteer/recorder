@@ -65,7 +65,7 @@ export default async (url: string, options: RecorderOptions = {}) => {
   // Finish the puppeteer script
   page.on('close', async () => {
     identation -= 1;
-    addLineToPuppeteerScript(`})`);
+    addLineToPuppeteerScript(`});`);
     output.push(null);
 
     // In case we started the browser instance
