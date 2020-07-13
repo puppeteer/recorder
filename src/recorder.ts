@@ -15,9 +15,8 @@
  */
 
 import * as puppeteer from 'puppeteer';
-import { readFileSync } from 'fs';
-import { Writable, Readable } from 'stream';
-import * as path from 'path';
+import { Readable } from 'stream';
+import { loadAndPatchAriaModule } from './aria';
 
 interface RecorderOptions {
   wsEndpoint?: string
@@ -53,12 +52,7 @@ export default async (url: string, options: RecorderOptions = {}) => {
   }
 
   page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
-
-  let script = readFileSync(path.join(__dirname, '../lib/inject.js'), { encoding: 'utf-8' })
-  script = script.replace(`var childNodes = [];`, `var childNodes = Array.from(node.shadowRoot?.childNodes || []).filter(n => !getOwner(n) && !isHidden(n))`);
-  // Todo(https://github.com/puppeteer/recorder/issues/15): Check if this is the right approach
-  script = script.replace(`'input[type="text"]:not([list])',`, `'input[type="text"]:not([list])',\n'input[type="password"]:not([list])',`);
-  page.evaluateOnNewDocument(script);
+  page.evaluateOnNewDocument(loadAndPatchAriaModule());
 
   // Setup puppeteer
   addLineToPuppeteerScript(`const {open, click, type, submit} = require('@pptr/recorder');`)

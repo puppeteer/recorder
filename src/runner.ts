@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-import * as fs from 'fs';
 import * as timers from 'timers';
-import * as path from 'path';
 import * as puppeteer from 'puppeteer';
 import * as readline from 'readline';
+import { loadAndPatchAriaModule } from './aria';
 
 declare const __dirname;
 
-let aria = fs.readFileSync(path.join(__dirname, '../node_modules/aria-api/dist/aria.js'), { encoding: 'utf8' });
-
-aria = aria.replace(`var childNodes = [];`, `var childNodes = Array.from(node.shadowRoot?.childNodes || []).filter(n => !getOwner(n) && !isHidden(n))`);
-// Todo(https://github.com/puppeteer/recorder/issues/15): Check if this is the right approach
-aria = aria.replace(`'input[type="text"]:not([list])',`, `'input[type="text"]:not([list])',\n'input[type="password"]:not([list])',`);
+const aria = loadAndPatchAriaModule();
 
 const ariaSelectorEngine = new Function('element', 'selector', `
   // Inject the aria library in case it has not been loaded yet
