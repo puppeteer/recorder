@@ -25,7 +25,7 @@ open('https://www.google.com/?hl=en', async () => {
   await click('ariaName/plus');
   await click('ariaName/2');
   await click('ariaName/equals');
-})
+});
 ```
 
 ## Architecture
