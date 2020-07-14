@@ -9,7 +9,7 @@
 This repository allows to record puppeteer scripts by interacting with the browser:
 
 ```bash
-npx puppeteer-recorder [url]
+npx @pptr/recorder [url]
 ```
 
 will start a new browser in which every interaction with the page will be recorded and printed to the console as 
