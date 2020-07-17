@@ -12,11 +12,13 @@
   },
   "dependencies": {
     "aria-api": "^0.3.0",
+    "expect": "^26.1.0",
     "puppeteer": "^5.0.0"
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
     "@types/node": "^14.0.20",
+    "@types/puppeteer": "^3.0.1",
     "browserify": "^16.5.1",
     "express": "^4.17.1",
     "jest": "^26.0.1",

@@ -18,6 +18,9 @@ import * as timers from 'timers';
 import * as puppeteer from 'puppeteer';
 import * as readline from 'readline';
 import { loadAndPatchAriaModule } from './aria';
+import * as expect from 'expect';
+
+export {expect};
 
 declare const __dirname;
 
@@ -65,6 +68,7 @@ const ariaSelectorEngine = new Function('element', 'selector', `
   return null;
 `);
 
+// @ts-ignore
 puppeteer.__experimental_registerCustomQueryHandler('aria', ariaSelectorEngine);
 
 const timeout = t => new Promise(cb => timers.setTimeout(cb, t));

@@ -35,7 +35,8 @@ describe("Recorder", () => {
 
     await new Promise((r) => stream.once("end", r));
 
-    return script.replace(url, "[url]");
+    const pattern = url.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
+    return script.replace(new RegExp(pattern, "g"), "[url]");
   }
 
   beforeAll(async () => {
@@ -70,14 +71,33 @@ describe("Recorder", () => {
       wsEndpoint: browser.wsEndpoint(),
     });
 
-    await page.click("#test");
+    await page.click("#button");
     await browser.newPage();
     await page.close();
 
     await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
-            "const {open, click, type, submit} = require('@pptr/recorder');
-            open('[url]', {}, async () => {
+            "const {open, click, type, submit, expect} = require('@pptr/recorder');
+            open('[url]', {}, async (page) => {
+              await click('aria/button[name=\\"Test Button\\"]');
+            });
+            "
+          `);
+  });
+
+  it("should output an url expectation when navigating", async () => {
+    const output = await recorder(url, {
+      wsEndpoint: browser.wsEndpoint(),
+    });
+
+    await page.click("#link");
+    await browser.newPage();
+    await page.close();
+
+    await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
+            "const {open, click, type, submit, expect} = require('@pptr/recorder');
+            open('[url]', {}, async (page) => {
               await click('aria/link[name=\\"Test Link\\"]');
+              expect(page.url()).resolves.toBe('[url]page2.html')
             });
             "
           `);

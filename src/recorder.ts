@@ -55,12 +55,17 @@ export default async (url: string, options: RecorderOptions = {}) => {
   page.evaluateOnNewDocument(loadAndPatchAriaModule());
 
   // Setup puppeteer
-  addLineToPuppeteerScript(`const {open, click, type, submit} = require('@pptr/recorder');`)
-  addLineToPuppeteerScript(`open('${url}', {}, async () => {`);
+  addLineToPuppeteerScript(`const {open, click, type, submit, expect} = require('@pptr/recorder');`)
+  addLineToPuppeteerScript(`open('${url}', {}, async (page) => {`);
   identation += 1;
 
   // Open the initial page
   await page.goto(url);
+
+  // Add expectations for mainframe navigations
+  page.on('framenavigated', (frame: puppeteer.Frame) => {
+    addLineToPuppeteerScript(`expect(page.url()).resolves.toBe('${frame.url()}')`);
+  });
 
 
   async function close() {
