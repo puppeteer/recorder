@@ -28,6 +28,10 @@ open('https://www.google.com/?hl=en', async () => {
 });
 ```
 
+## Command line options
+
+- Pass `--output file.js` to have the script written to a file
+
 ## Architecture
 
 This project consists of three parts:
