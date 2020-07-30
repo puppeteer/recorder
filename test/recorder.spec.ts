@@ -97,7 +97,28 @@ describe("Recorder", () => {
             "const {open, click, type, submit, expect} = require('@pptr/recorder');
             open('[url]', {}, async (page) => {
               await click('aria/link[name=\\"Test Link\\"]');
-              expect(page.url()).resolves.toBe('[url]page2.html')
+              expect(page.url()).resolves.toBe('[url]page2.html');
+            });
+            "
+          `);
+  });
+
+  it("should output an url expectation only for the main frame when navigating", async () => {
+    const output = await recorder(url, {
+      wsEndpoint: browser.wsEndpoint(),
+    });
+
+    await page.click("#iframes");
+    await page.click("#button");
+    await browser.newPage();
+    await page.close();
+
+    await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
+            "const {open, click, type, submit, expect} = require('@pptr/recorder');
+            open('[url]', {}, async (page) => {
+              await click('aria/link[name=\\"Go to iframes\\"]');
+              expect(page.url()).resolves.toBe('[url]iframes.html');
+              await click('aria/button[name=\\"Simple Button\\"]');
             });
             "
           `);

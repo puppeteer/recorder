@@ -64,7 +64,8 @@ export default async (url: string, options: RecorderOptions = {}) => {
 
   // Add expectations for mainframe navigations
   page.on('framenavigated', (frame: puppeteer.Frame) => {
-    addLineToPuppeteerScript(`expect(page.url()).resolves.toBe('${frame.url()}')`);
+    if (frame.parentFrame()) return;
+    addLineToPuppeteerScript(`expect(page.url()).resolves.toBe('${frame.url()}');`);
   });
 
 
