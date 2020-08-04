@@ -76,7 +76,7 @@ describe("Recorder", () => {
     await page.close();
 
     await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
-            "const {open, click, type, submit, expect} = require('@pptr/recorder');
+            "const {open, click, type, submit, expect, scrollToBottom} = require('@pptr/recorder');
             open('[url]', {}, async (page) => {
               await click('aria/button[name=\\"Test Button\\"]');
             });
@@ -94,7 +94,7 @@ describe("Recorder", () => {
     await page.close();
 
     await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
-            "const {open, click, type, submit, expect} = require('@pptr/recorder');
+            "const {open, click, type, submit, expect, scrollToBottom} = require('@pptr/recorder');
             open('[url]', {}, async (page) => {
               await click('aria/link[name=\\"Test Link\\"]');
               expect(page.url()).resolves.toBe('[url]page2.html');
@@ -114,7 +114,7 @@ describe("Recorder", () => {
     await page.close();
 
     await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
-            "const {open, click, type, submit, expect} = require('@pptr/recorder');
+            "const {open, click, type, submit, expect, scrollToBottom} = require('@pptr/recorder');
             open('[url]', {}, async (page) => {
               await click('aria/link[name=\\"Go to iframes\\"]');
               expect(page.url()).resolves.toBe('[url]iframes.html');
