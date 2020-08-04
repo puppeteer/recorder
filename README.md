@@ -39,6 +39,20 @@ This project consists of three parts:
 - __Runner__: Npm package to abstract away the puppeteer details when running recorded interactions
 - __Injected Script__: The recorder will automatically inject a script into the browser to collect information about interactions and to relay them to the recorder
 
+### Selectors
+
+The usual way of identifying elements within a website is to use a CSS selector. But more and more websites use 
+some kind of automatically generated class names that do not carry any semantic value anymore and a prone to changes.
+To reduce the brittleness of scripts generated with this tool, we decided to pioneer querying the ARIA model instead.
+So instead of 
+```
+#tsf > div:nth-child(2) > div.A8SBwf > div.RNNXgb > div > div.a4bIc > input
+```
+the same element can also be identified by
+```
+combobox[name="Search"]
+```
+
 ## Setup
 
 When checking out the repository locally, you can use 
