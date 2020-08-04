@@ -72,5 +72,7 @@ Use the runner with `DEBUG=1` to execute the script line by line.
 ## Known limitations
 
 There are a number of known limitations:
-- It's currently not possible to record interactions inside of [shadow doms](https://github.com/puppeteer/recorder/issues/4)
+- ~~It's currently not possible to record interactions inside of [shadow doms](https://github.com/puppeteer/recorder/issues/4)~~
 - It only records clicks, changes to text fields and form submits for now
+- It does not handle [Out-of-Process iframes](https://www.chromium.org/developers/design-documents/oop-iframes) ([See Bug](https://github.com/puppeteer/recorder/issues/20))
+
