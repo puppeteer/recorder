@@ -16,7 +16,7 @@
 
 import * as puppeteer from 'puppeteer';
 import { Readable } from 'stream';
-import { loadAndPatchAriaModule } from './aria';
+import { loadAndPatchInjectedModule } from './aria';
 
 interface RecorderOptions {
   wsEndpoint?: string
@@ -52,10 +52,10 @@ export default async (url: string, options: RecorderOptions = {}) => {
   }
 
   page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
-  page.evaluateOnNewDocument(loadAndPatchAriaModule());
+  page.evaluateOnNewDocument(loadAndPatchInjectedModule());
 
   // Setup puppeteer
-  addLineToPuppeteerScript(`const {open, click, type, submit, expect} = require('@pptr/recorder');`)
+  addLineToPuppeteerScript(`const {open, click, type, submit, expect, scrollToBottom} = require('@pptr/recorder');`)
   addLineToPuppeteerScript(`open('${url}', {}, async (page) => {`);
   identation += 1;
 

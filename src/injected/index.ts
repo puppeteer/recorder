@@ -45,3 +45,16 @@ window.addEventListener('submit', (e) => {
   const selector = getSelectorForEvent(e);
   addLineToPuppeteerScript(`await submit('${selector}');`);
 }, true);
+
+let scrollTimeout =  null;
+window.addEventListener('scroll', (e) => {
+  if(scrollTimeout) clearTimeout(scrollTimeout);
+  const prevScrollHeight = document.body.scrollHeight;
+  scrollTimeout = setTimeout(() => {
+    const currentScrollHeight = document.body.scrollHeight;
+    console.log(prevScrollHeight, currentScrollHeight);
+    if(currentScrollHeight > prevScrollHeight) {
+      addLineToPuppeteerScript(`await scrollToBottom();`);
+    }
+  }, 1000);
+}, true);

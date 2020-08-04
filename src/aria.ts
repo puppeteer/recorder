@@ -17,12 +17,22 @@
 import { readFileSync } from 'fs';
 import * as path from 'path';
 
- export function loadAndPatchAriaModule() {
+export function loadAndPatchAriaModule() {
    // Load aria implementation from https://github.com/xi/aria-api (MIT Licensed)
-  let script = readFileSync(path.join(__dirname, '../lib/inject.js'), { encoding: 'utf-8' })
+  let script = readFileSync(path.join(__dirname, '../node_modules/aria-api/dist/aria.js'), { encoding: 'utf-8' })
   script = script.replace(`var childNodes = [];`, `var childNodes = Array.from(node.shadowRoot?.childNodes || []).filter(n => !getOwner(n) && !isHidden(n))`);
   // Todo(https://github.com/puppeteer/recorder/issues/15): Check if this is the right approach
   script = script.replace(`'input[type="text"]:not([list])',`, `'input[type="text"]:not([list])',\n'input[type="password"]:not([list])',`);
 
   return script;
- }
+}
+
+export function loadAndPatchInjectedModule() {
+  // Load aria implementation from https://github.com/xi/aria-api (MIT Licensed)
+ let script = readFileSync(path.join(__dirname, '../lib/inject.js'), { encoding: 'utf-8' })
+ script = script.replace(`var childNodes = [];`, `var childNodes = Array.from(node.shadowRoot?.childNodes || []).filter(n => !getOwner(n) && !isHidden(n))`);
+ // Todo(https://github.com/puppeteer/recorder/issues/15): Check if this is the right approach
+ script = script.replace(`'input[type="text"]:not([list])',`, `'input[type="text"]:not([list])',\n'input[type="password"]:not([list])',`);
+
+ return script;
+}

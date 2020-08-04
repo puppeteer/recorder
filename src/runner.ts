@@ -20,7 +20,7 @@ import * as readline from 'readline';
 import { loadAndPatchAriaModule } from './aria';
 import * as expect from 'expect';
 
-export {expect};
+export { expect };
 
 declare const __dirname;
 
@@ -29,7 +29,7 @@ const aria = loadAndPatchAriaModule();
 const ariaSelectorEngine = new Function('element', 'selector', `
   // Inject the aria library in case it has not been loaded yet
   if(!globalThis.aria) {${aria}}
-
+  
   // Backslashes have to be escaped here 
   const m = /(?<role>\\w+)\\[(?<attribute>\\w+)(?<operator>=|\\*=)"(?<value>.+)"\\]/.exec(selector);
   if(!m) throw new Error('Invalid aria selector: ' + selector); 
@@ -84,11 +84,11 @@ interface RunnerOptions {
 async function beforeStep(...args) {
   console.log(...args);
 
-  if(!debug) {
+  if (!debug) {
     await timeout(delay);
     return;
   }
-  
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -114,13 +114,13 @@ export async function open(url, options: RunnerOptions, cb) {
 
 export async function click(selector) {
   await beforeStep('click', selector);
-  const element = await page.waitForSelector(selector);
+  const element = await page.waitForSelector(selector, { visible: true });
   await element.click();
 }
 
 export async function type(selector, value) {
   await beforeStep('type', selector, value);
-  const element = await page.waitForSelector(selector);
+  const element = await page.waitForSelector(selector, { visible: true });
   await element.click({ clickCount: 3 });
   await element.press('Backspace');
   await element.type(value);
@@ -129,4 +129,9 @@ export async function type(selector, value) {
 export async function submit(selector) {
   await beforeStep('submit', selector);
   await page.$eval(selector, form => form.requestSubmit());
+}
+
+export async function scrollToBottom() {
+  await beforeStep('scrollToBottom');
+  await page.evaluate(() => window.scrollBy(0, document.body.scrollHeight));
 }
