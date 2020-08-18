@@ -1,5 +1,6 @@
-test/
-src/
+.github/
 coverage/
 jest.config.js
+src/
+test/
 tsconfig.json
