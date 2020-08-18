@@ -9,14 +9,14 @@
 This repository allows to record puppeteer scripts by interacting with the browser:
 
 ```bash
-npx @pptr/recorder [url]
+npx @puppeteer/recorder [url]
 ```
 
-will start a new browser in which every interaction with the page will be recorded and printed to the console as 
+will start a new browser in which every interaction with the page will be recorded and printed to the console as
 a script runnable via puppeteer. __For now, this will download Chromium every time again. This has to be addressed on the puppeteer side. For a workaround, follow the steps from _Setup_ below.__
 
 ```js
-const {open, click, type, submit} = require('@pptr/recorder');
+const {open, click, type, submit} = require('@puppeteer/recorder');
 open('https://www.google.com/?hl=en', async () => {
   await click('ariaName/Search');
   await type('ariaName/Search', 'calculator');
@@ -41,10 +41,10 @@ This project consists of three parts:
 
 ### Selectors
 
-The usual way of identifying elements within a website is to use a CSS selector. But more and more websites use 
+The usual way of identifying elements within a website is to use a CSS selector. But more and more websites use
 some kind of automatically generated class names that do not carry any semantic value anymore and a prone to changes.
 To reduce the brittleness of scripts generated with this tool, we decided to pioneer querying the ARIA model instead.
-So instead of 
+So instead of
 ```
 #tsf > div:nth-child(2) > div.A8SBwf > div.RNNXgb > div > div.a4bIc > input
 ```
@@ -55,7 +55,7 @@ combobox[name="Search"]
 
 ## Setup
 
-When checking out the repository locally, you can use 
+When checking out the repository locally, you can use
 
 ```bash
 npm run build
@@ -63,7 +63,7 @@ npm run build
 
 to compile the _injected script_, the _recorder_ and the _runner_.
 By running `npm link`, the package will become available to be run via `npx`.
-When running the recorded scripts, make sure the package is available in their `node_modules` folder by using `npm link @pptr/recorder`.
+When running the recorded scripts, make sure the package is available in their `node_modules` folder by using `npm link @puppeteer/recorder`.
 
 ## Debugging
 

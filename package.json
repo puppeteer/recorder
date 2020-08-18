@@ -1,10 +1,10 @@
 {
-  "name": "@pptr/recorder",
+  "name": "@puppeteer/recorder",
   "version": "0.0.3",
   "description": "Interactively record puppeteer scripts",
   "main": "./lib/runner.js",
   "bin": {
-    "@pptr/recorder": "./lib/cli.js"
+    "@puppeteer/recorder": "./lib/cli.js"
   },
   "repository": {
     "type": "git",

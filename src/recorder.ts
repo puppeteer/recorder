@@ -55,7 +55,7 @@ export default async (url: string, options: RecorderOptions = {}) => {
   page.evaluateOnNewDocument(loadAndPatchInjectedModule());
 
   // Setup puppeteer
-  addLineToPuppeteerScript(`const {open, click, type, submit, expect, scrollToBottom} = require('@pptr/recorder');`)
+  addLineToPuppeteerScript(`const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');`)
   addLineToPuppeteerScript(`open('${url}', {}, async (page) => {`);
   identation += 1;
 
