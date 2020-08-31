@@ -43,6 +43,9 @@ describe("Recorder", () => {
     browser = await puppeteer.launch({
       defaultViewport: null,
       headless: true,
+      args: [
+        '--enable-blink-features=ComputedAccessibilityInfo',
+      ],
     });
 
     app = express();

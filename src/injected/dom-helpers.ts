@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-import { getName, getRole } from 'aria-api';
 import { cssPath } from './css-path';
+
+declare global {
+  interface Element {
+    computedName: string;
+    computedRole: string;
+  }
+}
 
 export const isSubmitButton = (e: HTMLElement) => e.tagName === 'BUTTON' && (e as HTMLButtonElement).type === 'submit' && (e as HTMLButtonElement).form !== null;
 
@@ -23,14 +29,11 @@ export const getSelector = (targetNode: HTMLElement) => {
   const rootTextContent = targetNode.textContent.trim();
   let currentNode = targetNode;
   while (currentNode) {
-    // Prevent aria-api from throwing
-    if (currentNode.parentElement) {
-      const name = getName(currentNode);
-      const role = getRole(currentNode);
-      if (name && role && (!rootTextContent || name.includes(rootTextContent))) {
-        const operator = (!rootTextContent || rootTextContent === name) ? '=' : '*=';
-        return `aria/${role}[name${operator}"${rootTextContent || name}"]`;
-      }
+    const name = currentNode.computedName;
+    const role = currentNode.computedRole;
+    if (name && role && (!rootTextContent || name.includes(rootTextContent))) {
+      const operator = (!rootTextContent || rootTextContent === name) ? '=' : '*=';
+      return `aria/${role}[name${operator}"${rootTextContent || name}"]`;
     }
     // @ts-ignore
     currentNode = currentNode.parentNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? currentNode.parentNode.host : currentNode.parentElement;

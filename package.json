@@ -29,10 +29,11 @@
     "typescript": "^3.9.2"
   },
   "scripts": {
-    "test": "jest",
+    "test": "npm run build && npm run build:browser-test && jest",
     "build": "npm run build:node && npm run build:browser",
     "build:node": "tsc",
     "build:browser": "browserify src/injected/index.ts -p tsify > lib/inject.js",
+    "build:browser-test": "browserify -e test/dom-helpers.ts -p tsify > test/lib/dom-helpers.js",
     "dev": "ts-node ./src/cli.ts"
   },
   "author": "The Chromium Authors",

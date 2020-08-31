@@ -24,16 +24,24 @@ declare global {
   interface Window {
     addLineToPuppeteerScript: (line: string) => void;
   }
+  interface Element {
+    computedName: string;
+    computedRole: string;
+  }
 }
 
 describe('Injected Script', () => {
   let fn;
   beforeEach(() => {
     require('../src/injected');
+    Element.prototype.computedName = '';
+    Element.prototype.computedRole = '';
     fn = window.addLineToPuppeteerScript = jest.fn();
   });
 
   it('should emit a click line for click events', () => {
+    Element.prototype.computedName = 'Hello World';
+    Element.prototype.computedRole = 'button';
     document.body.innerHTML = `<div><button data-id="test">Hello World</button></div>`;
     const element = document.querySelector('[data-id="test"]') as HTMLButtonElement;
     element.click();

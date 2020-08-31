@@ -29,6 +29,9 @@ async function getBrowserInstance(options: RecorderOptions) {
     return puppeteer.launch({
       headless: false,
       defaultViewport: null,
+      args: [
+        '--enable-blink-features=ComputedAccessibilityInfo',
+      ],
     });
   }
 }

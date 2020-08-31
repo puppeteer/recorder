@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['./test/'],
-  collectCoverageFrom: [
-    'src/*.{js,ts}'
-  ]
-};
+import { isSubmitButton, getSelector } from '../src/injected/dom-helpers';
+
+declare global {
+  function isSubmitButton(element: HTMLElement): boolean;
+  function getSelector(element: HTMLElement): string | null;
+}
+
+window.isSubmitButton = isSubmitButton;
+window.getSelector = getSelector;
