@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment node
  */
 
 /**
@@ -18,67 +18,111 @@
  * limitations under the License.
  */
 
-import { isSubmitButton, getSelector } from '../src/injected/dom-helpers';
+import { readFileSync } from "fs";
+import * as path from "path";
+import * as puppeteer from "puppeteer";
 
-describe('DOM', () => {
-  describe('isSubmitButton', () => {
-    it('should return true if the button is a submit button', () => {
-      document.body.innerHTML = `<form><button id="button" /></form>`;
+let browser: puppeteer.Browser, page: puppeteer.Page;
+let isSubmitButton, getSelector;
 
-      const element = document.getElementById('button') as any;
-      expect(isSubmitButton(element)).toBe(true);
+describe("DOM", () => {
+  beforeAll(async () => {
+    browser = await puppeteer.launch({
+      defaultViewport: null,
+      headless: true,
+      args: ["--enable-blink-features=ComputedAccessibilityInfo"],
+    });
+    page = await browser.newPage();
+    const script = readFileSync(path.join(__dirname, "lib/dom-helpers.js"), {
+      encoding: "utf-8",
+    });
+    await page.evaluate(script);
+  });
+
+  afterAll(async () => {
+    await browser.close();
+  });
+
+  describe("isSubmitButton", () => {
+    it("should return true if the button is a submit button", async () => {
+      await page.setContent(`<form><button id="button" /></form>`);
+
+      const element = await page.$("button");
+      const isSubmitCheck = await element.evaluate((element) => isSubmitButton(element));
+      expect(isSubmitCheck).toBe(true);
     });
 
-    it('should return false if the button is not a submit button', () => {
-      document.body.innerHTML = `<button id="button" />`;
-
-      const element = document.getElementById('button');
-      expect(isSubmitButton(element)).toBe(false);
+    it("should return false if the button is not a submit button", async () => {
+      await page.setContent(`<button id="button" />`);
+      const element = await page.$("button");
+      const isSubmitCheck = await element.evaluate((element) => isSubmitButton(element));
+      expect(isSubmitCheck).toBe(false);
     });
   });
 
-  describe('getSelector', () => {
-    it('should return the aria name if it is available', () => {
-      document.body.innerHTML = `<form><button id="button">Hello World</button></form>`;
+  describe("getSelector", () => {
+    it("should return the aria name if it is available", async () => {
+      await page.setContent(
+        `<form><button id="button">Hello World</button></form>`
+      );
 
-      const element = document.getElementById('button') as any;
-      expect(getSelector(element)).toBe('aria/button[name="Hello World"]');
+      const element = await page.$("button");
+      const selector = await element.evaluate((element) => getSelector(element));
+      expect(selector).toBe('aria/button[name="Hello World"]');
     });
 
-    it('should return an aria name selector for the closest link or button', () => {
-      document.body.innerHTML = `<form><button><span id="button">Hello World</span></button></form>`;
+    it("should return an aria name selector for the closest link or button", async () => {
+      await page.setContent(
+        `<form><button><span id="button">Hello World</span></button></form>`
+      );
 
-      const element = document.getElementById('button') as any;
-      expect(getSelector(element)).toBe('aria/button[name="Hello World"]');
+      const element = await page.$("button");
+      const selector = await element.evaluate((element) => getSelector(element));
+      expect(selector).toBe('aria/button[name="Hello World"]');
     });
 
-    it('should return an aria name like selector for the closest link or button if the text is not an exact match', () => {
-      document.body.innerHTML = `<form><button><span id="button">Hello</span> World</button></form>`;
+    it("should return an aria name like selector for the closest link or button if the text is not an exact match", async () => {
+      await page.setContent(
+        `<form><button><span id="button">Hello</span> World</button></form>`
+      );
 
-      const element = document.getElementById('button') as any;
-      expect(getSelector(element)).toBe('aria/button[name*="Hello"]');
+      const element = await page.$("#button");
+      const selector = await element.evaluate((element) => getSelector(element));
+      expect(selector).toBe('aria/button[name*="Hello"]');
     });
 
-    it('should return css selector if the element is not identifiable by an aria selector', () => {
-      document.body.innerHTML = `<form><div><span id="button">Hello</span> World</div></form>`;
+    it("should return css selector if the element is not identifiable by an aria selector", async () => {
+      await page.setContent(
+        `<form><div><span id="button">Hello</span> World</div></form>`
+      );
 
-      const element = document.getElementById('button') as any;
-      expect(getSelector(element)).toBe('#button');
+      const element = await page.$("#button");
+      const selector = await element.evaluate((element) => getSelector(element));
+      expect(selector).toBe("#button");
     });
 
-    // This is currently not testable because it relies on hot patching the
-    // aria-api module.
-    it.skip('should pierce shadow roots to get an aria name', () => {
-      const link = document.createElement('a');
-      document.body.appendChild(link);
-      const span1 = document.createElement('span');
-      link.appendChild(span1);
-      const shadow = span1.attachShadow({ mode: 'open' });
-      const span2 = document.createElement('span');
-      span2.textContent = 'Hello World';
-      shadow.appendChild(span2);
-
-      expect(getSelector(link)).toBe('aria/link[name="Hello World"]');
+    it("should pierce shadow roots to get an aria name", async () => {
+      await page.setContent(
+        `
+        <script>
+          window.addEventListener('DOMContentLoaded', () => {
+            const link = document.createElement('a');
+            link.setAttribute('role', 'link');
+            link.textContent = 'Hello ';
+            document.body.appendChild(link);
+            const span1 = document.createElement('span');
+            link.appendChild(span1);
+            const shadow = span1.attachShadow({mode: 'open'});
+            const span2 = document.createElement('span');
+            span2.textContent = 'World';
+            shadow.appendChild(span2);
+          });
+        </script>
+        `
+      );
+      const link = await page.$("a");
+      const selector = await link.evaluate((element) => getSelector(element));
+      expect(selector).toBe('aria/link[name*="Hello"]');
     });
   });
 });
