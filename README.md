@@ -4,16 +4,18 @@
 
 > :warning: This is still work in progress
 
-> Puppeteer is a Node.js library which provides a high-level API to control Chrome or Chromium over the [DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/). Puppeteer runs [headless](https://developers.google.com/web/updates/2017/04/headless-chrome) by default, but can be configured to run full (non-headless) Chrome or Chromium.
+> Puppeteer is a Node.js library which provides a high-level API to control Chrome or Chromium over the [DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/).
 
-This repository allows recording Puppeteer scripts by interacting with the browser:
+This repository allows you to record Puppeteer scripts by interacting with the browser.
+
+To start a new recording:
 
 ```bash
 npx @puppeteer/recorder [url]
 ```
 
-will start a new browser in which every interaction with the page will be recorded and printed to the console as
-a script runnable via puppeteer. __For now, this will download Chromium every time again. This has to be addressed on the puppeteer side. For a workaround, follow the steps from _Setup_ below.__
+Every interaction with the page will be recorded and printed to the console as a script, which you can run with puppeteer.
+__For now, this will download Chromium every time again. This has to be addressed on the puppeteer side. As a workaround, build this package locally (see [Setup](#setup)).__
 
 ```js
 const {open, click, type, submit} = require('@puppeteer/recorder');
@@ -30,21 +32,21 @@ open('https://www.google.com/?hl=en', async () => {
 
 ## Command line options
 
-- Pass `--output file.js` to have the script written to a file
+- Pass `--output file.js` to write the output script to a file
 
 ## Architecture
 
 This project consists of three parts:
-- __Recorder__: Cli script that starts a Chromium instance to record user interactions
-- __Runner__: Npm package to abstract away the puppeteer details when running recorded interactions
-- __Injected Script__: The recorder will automatically inject a script into the browser to collect information about interactions and to relay them to the recorder
+- __Recorder__: A CLI script that starts a Chromium instance to record user interactions
+- __Runner__: An NPM package to abstract away the puppeteer details when running a recording
+- __Injected Script__: The recorder injects this script into the browser to collect user interactions
 
 ### Selectors
 
-The usual way of identifying elements within a website is to use a CSS selector. But more and more websites use
-some kind of automatically generated class names that do not carry any semantic value anymore and a prone to changes.
-To reduce the brittleness of scripts generated with this tool, we decided to pioneer querying the ARIA model instead.
-So instead of
+The usual way of identifying elements within a website is to use a CSS selector. But a lot of websites use
+automatically generated class names that do not carry any semantic value, and change frequently.
+To increase the reliability of scripts generated with this tool, we query using the ARIA model.
+Instead of
 ```
 #tsf > div:nth-child(2) > div.A8SBwf > div.RNNXgb > div > div.a4bIc > input
 ```
@@ -55,15 +57,29 @@ combobox[name="Search"]
 
 ## Setup
 
-When checking out the repository locally, you can use
+You can also check out this repository locally.
+To compile the _injected script_, the _recorder_ and the _runner_:
 
 ```bash
+npm install
 npm run build
 ```
 
-to compile the _injected script_, the _recorder_ and the _runner_.
-By running `npm link`, the package will become available to be run via `npx`.
-When running the recorded scripts, make sure the package is available in their `node_modules` folder by using `npm link @puppeteer/recorder`.
+To make the package available to run via `npx`:
+```bash
+npm link
+```
+
+To run the package via `npx`:
+```bash
+npx recorder [url]
+```
+
+When running a recorded script, make sure this package is available in the local `node_modules` folder:
+
+```bash
+npm link @puppeteer/recorder
+```
 
 ## Debugging
 
