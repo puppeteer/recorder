@@ -47,9 +47,7 @@ describe('Injected Script', () => {
       '[data-id="test"]'
     ) as HTMLButtonElement;
     element.click();
-    expect(fn).toHaveBeenCalledWith(
-      `await click('aria/button[name="Hello World"]');`
-    );
+    expect(fn).toHaveBeenCalledWith(`await click('aria/Hello World[role="button"]');`);
   });
 
   it('should only emit submit line for click events on submit buttons in forms', () => {

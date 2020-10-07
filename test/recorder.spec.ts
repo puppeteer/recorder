@@ -81,7 +81,7 @@ describe('Recorder', () => {
     await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
             "const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');
             open('[url]', {}, async (page) => {
-              await click('aria/button[name=\\"Test Button\\"]');
+              await click('aria/Test Button[role=\\"button\\"]');
             });
             "
           `);
@@ -99,7 +99,7 @@ describe('Recorder', () => {
     await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
             "const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');
             open('[url]', {}, async (page) => {
-              await click('aria/link[name=\\"Test Link\\"]');
+              await click('aria/Test Link[role=\\"link\\"]');
               expect(page.url()).resolves.toBe('[url]page2.html');
             });
             "
@@ -119,9 +119,9 @@ describe('Recorder', () => {
     await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
             "const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');
             open('[url]', {}, async (page) => {
-              await click('aria/link[name=\\"Go to iframes\\"]');
+              await click('aria/Go to iframes[role=\\"link\\"]');
               expect(page.url()).resolves.toBe('[url]iframes.html');
-              await click('aria/button[name=\\"Simple Button\\"]');
+              await click('aria/Simple Button[role=\\"button\\"]');
             });
             "
           `);

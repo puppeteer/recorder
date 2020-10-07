@@ -18,23 +18,23 @@
  * limitations under the License.
  */
 
-import { readFileSync } from "fs";
-import * as path from "path";
-import * as puppeteer from "puppeteer";
+import { readFileSync } from 'fs';
+import * as path from 'path';
+import * as puppeteer from 'puppeteer';
 
 let browser: puppeteer.Browser, page: puppeteer.Page;
 let isSubmitButton, getSelector;
 
-describe("DOM", () => {
+describe('DOM', () => {
   beforeAll(async () => {
     browser = await puppeteer.launch({
       defaultViewport: null,
       headless: true,
-      args: ["--enable-blink-features=ComputedAccessibilityInfo"],
+      args: ['--enable-blink-features=ComputedAccessibilityInfo'],
     });
     page = await browser.newPage();
-    const script = readFileSync(path.join(__dirname, "lib/dom-helpers.js"), {
-      encoding: "utf-8",
+    const script = readFileSync(path.join(__dirname, 'lib/dom-helpers.js'), {
+      encoding: 'utf-8',
     });
     await page.evaluate(script);
   });
@@ -43,65 +43,65 @@ describe("DOM", () => {
     await browser.close();
   });
 
-  describe("isSubmitButton", () => {
-    it("should return true if the button is a submit button", async () => {
-      await page.setContent(`<form><button id="button" /></form>`);
+  describe('isSubmitButton', () => {
+    it('should return true if the button is a submit button', async () => {
+      await page.setContent(`<form><button id='button' /></form>`);
 
-      const element = await page.$("button");
+      const element = await page.$('button');
       const isSubmitCheck = await element.evaluate((element) => isSubmitButton(element));
       expect(isSubmitCheck).toBe(true);
     });
 
-    it("should return false if the button is not a submit button", async () => {
-      await page.setContent(`<button id="button" />`);
-      const element = await page.$("button");
+    it('should return false if the button is not a submit button', async () => {
+      await page.setContent(`<button id='button' />`);
+      const element = await page.$('button');
       const isSubmitCheck = await element.evaluate((element) => isSubmitButton(element));
       expect(isSubmitCheck).toBe(false);
     });
   });
 
-  describe("getSelector", () => {
-    it("should return the aria name if it is available", async () => {
+  describe('getSelector', () => {
+    it('should return the aria name if it is available', async () => {
       await page.setContent(
-        `<form><button id="button">Hello World</button></form>`
+        `<form><button id='button'>Hello World</button></form>`
       );
 
-      const element = await page.$("button");
+      const element = await page.$('button');
       const selector = await element.evaluate((element) => getSelector(element));
-      expect(selector).toBe('aria/button[name="Hello World"]');
+      expect(selector).toBe('aria/Hello World[role="button"]');
     });
 
-    it("should return an aria name selector for the closest link or button", async () => {
+    it('should return an aria name selector for the closest link or button', async () => {
       await page.setContent(
-        `<form><button><span id="button">Hello World</span></button></form>`
+        `<form><button><span id='button'>Hello World</span></button></form>`
       );
 
-      const element = await page.$("button");
+      const element = await page.$('button');
       const selector = await element.evaluate((element) => getSelector(element));
-      expect(selector).toBe('aria/button[name="Hello World"]');
+      expect(selector).toBe('aria/Hello World[role="button"]');
     });
 
-    it("should return an aria name like selector for the closest link or button if the text is not an exact match", async () => {
+    it.skip('should return an aria name selector for the closest link or button if the text is not an exact match', async () => {
       await page.setContent(
-        `<form><button><span id="button">Hello</span> World</button></form>`
+        `<form><button><span id='button'>Hello</span> World</button></form>`
       );
 
-      const element = await page.$("#button");
+      const element = await page.$('#button');
       const selector = await element.evaluate((element) => getSelector(element));
-      expect(selector).toBe('aria/button[name*="Hello"]');
+      expect(selector).toBe('aria/Hello World[role="button"]');
     });
 
-    it("should return css selector if the element is not identifiable by an aria selector", async () => {
+    it('should return css selector if the element is not identifiable by an aria selector', async () => {
       await page.setContent(
-        `<form><div><span id="button">Hello</span> World</div></form>`
+        `<form><div><span id='button'>Hello</span> World</div></form>`
       );
 
-      const element = await page.$("#button");
+      const element = await page.$('#button');
       const selector = await element.evaluate((element) => getSelector(element));
-      expect(selector).toBe("#button");
+      expect(selector).toBe('#button');
     });
 
-    it("should pierce shadow roots to get an aria name", async () => {
+    it('should pierce shadow roots to get an aria name', async () => {
       await page.setContent(
         `
         <script>
@@ -120,9 +120,9 @@ describe("DOM", () => {
         </script>
         `
       );
-      const link = await page.$("a");
+      const link = await page.$('a');
       const selector = await link.evaluate((element) => getSelector(element));
-      expect(selector).toBe('aria/link[name*="Hello"]');
+      expect(selector).toBe('aria/Hello World[role="link"]');
     });
   });
 });
