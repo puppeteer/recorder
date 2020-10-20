@@ -16,7 +16,9 @@
 
 import * as puppeteer from 'puppeteer';
 import { Readable } from 'stream';
-import { loadAndPatchInjectedModule } from './aria';
+
+let client: puppeteer.CDPSession;
+let paused: Promise<void>;
 
 interface RecorderOptions {
   wsEndpoint?: string;
@@ -29,11 +31,27 @@ async function getBrowserInstance(options: RecorderOptions) {
     return puppeteer.launch({
       headless: false,
       defaultViewport: null,
-      args: [
-        '--enable-blink-features=ComputedAccessibilityInfo',
-      ],
     });
   }
+}
+
+export async function getAriaSelector(
+  objectId: string
+): Promise<string | null> {
+  // @ts-ignore
+  const { nodes } = await client
+    .send('Accessibility.queryAXTree', {
+      objectId,
+    })
+    .catch((error) => console.log(error.message));
+  if (nodes.length === 0) return null;
+  const axNode = nodes[0];
+  const name = axNode.name.value;
+  const role = axNode.role.value;
+  if (name) {
+    return `aria/${name}[role="${role}"]`;
+  }
+  return null;
 }
 
 export default async (url: string, options: RecorderOptions = {}) => {
@@ -47,6 +65,76 @@ export default async (url: string, options: RecorderOptions = {}) => {
   output.setEncoding('utf8');
   const browser = await getBrowserInstance(options);
   const page = await browser.pages().then((pages) => pages[0]);
+  // @ts-ignore
+  client = page._client;
+  await client.send('Debugger.enable', {});
+  await client.send('DOMDebugger.setEventListenerBreakpoint', {
+    eventName: 'click',
+  });
+  await client.send('DOMDebugger.setEventListenerBreakpoint', {
+    eventName: 'change',
+  });
+  await client.send('DOMDebugger.setEventListenerBreakpoint', {
+    eventName: 'submit',
+  });
+  const resume = async () => {
+    await client.send('Debugger.setSkipAllPauses', { skip: true });
+    await client.send('Debugger.resume', { terminateOnResume: false });
+    await client.send('Debugger.setSkipAllPauses', { skip: false });
+  };
+
+  client.on('Debugger.paused', async function (params) {
+    paused = this;
+    const event = params.data.eventName;
+    const localFrame = params.callFrames[0].scopeChain[0];
+    const properties = await client.send('Runtime.getProperties', {
+      objectId: localFrame.object.objectId,
+    });
+    if (event === 'listener:click') {
+      // @ts-ignore
+      // console.log(`kicked click listener: ${JSON.stringify(properties.result)}`);
+      // @ts-ignore
+      const pointerEvent = properties.result.find(
+        (prop) => prop.value.className === 'PointerEvent' || prop.value.className === 'MouseEvent'
+      );
+      const pointerEventProps = await client.send('Runtime.getProperties', {
+        objectId: pointerEvent.value.objectId,
+      });
+      // @ts-ignore
+      const target = pointerEventProps.result.find(
+        (prop) => prop.name === 'target'
+      );
+      const selector = await getAriaSelector(target.value.objectId);
+      if (selector) {
+        addLineToPuppeteerScript(`await click('${selector}');`);
+      } else {
+        console.log(`failed to generate selector`);
+      }
+    } else if (event === 'listener:change') {
+      // @ts-ignore
+      // console.log(`kicked change listener: ${JSON.stringify(properties.result)}`);
+      // @ts-ignore
+      const changeEvent = properties.result.find(
+        (prop) => prop.value.className === 'Event'
+      );
+      const changeEventProps = await client.send('Runtime.getProperties', {
+        objectId: changeEvent.value.objectId,
+      });
+      // @ts-ignore
+      const target = changeEventProps.result.find(
+        (prop) => prop.name === 'target'
+      );
+      const targetValue = await client.send('Runtime.callFunctionOn', {functionDeclaration: 'function() { return this.value }', objectId: target.value.objectId});
+      // @ts-ignore
+      // console.log(`target: ${JSON.stringify(targetValue)}`);
+      // @ts-ignore
+      const value = targetValue.result.value;
+      const escapedValue = value.replace(/'/g, '\\\'');
+      const selector = await getAriaSelector(target.value.objectId);
+      addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
+    }
+    await resume();
+  });
 
   let identation = 0;
   const addLineToPuppeteerScript = (line: string) => {
@@ -54,8 +142,17 @@ export default async (url: string, options: RecorderOptions = {}) => {
     output.push(data + '\n');
   };
 
-  page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
+  /*
+  await page.exposeFunction(
+    'addLineToPuppeteerScript',
+    addLineToPuppeteerScript
+  );
   page.evaluateOnNewDocument(loadAndPatchInjectedModule());
+  */
+  page.evaluateOnNewDocument(() => {
+    window.addEventListener('change', async (e) => { }, true);
+    window.addEventListener('click', async (e) => { }, true);
+  });
 
   // Setup puppeteer
   addLineToPuppeteerScript(
@@ -68,8 +165,9 @@ export default async (url: string, options: RecorderOptions = {}) => {
   await page.goto(url);
 
   // Add expectations for mainframe navigations
-  page.on('framenavigated', (frame: puppeteer.Frame) => {
+  page.on('framenavigated', async (frame: puppeteer.Frame) => {
     if (frame.parentFrame()) return;
+    await paused;
     addLineToPuppeteerScript(
       `expect(page.url()).resolves.toBe('${frame.url()}');`
     );
