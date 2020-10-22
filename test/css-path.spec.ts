@@ -20,7 +20,7 @@
 
 import { cssPath } from '../src/injected/css-path';
 
-describe('CSS Path', () => {
+describe.skip('CSS Path', () => {
   it('should return an empty path if the given node is not an element node', () => {
     const path = cssPath(document);
     expect(path).toBe('');

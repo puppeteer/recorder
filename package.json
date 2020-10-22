@@ -32,14 +32,11 @@
     "prettier": "^2.0.5",
     "ts-jest": "^26.0.0",
     "ts-node": "^8.10.2",
-    "tsify": "^4.0.2",
     "typescript": "^3.9.2"
   },
   "scripts": {
-    "test": "npm run build && npm run build:browser-test && jest",
-    "build": "npm run build:node && npm run build:browser",
-    "build:node": "tsc",
-    "build:browser": "browserify src/injected/index.ts -p tsify > lib/inject.js",
+    "test": "npm run build && jest",
+    "build": "tsc",
     "dev": "ts-node ./src/cli.ts",
     "eslint": "([ \"$CI\" = true ] && eslint --ext js --ext ts --quiet -f codeframe . || eslint --ext js --ext ts .)",
     "eslint-fix": "eslint --ext js --ext ts --fix ."
