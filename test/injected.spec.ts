@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-export { };
+export {};
 
 declare global {
   interface Window {
@@ -35,31 +35,45 @@ describe('Injected Script', () => {
 
   it('should emit a click line for click events', () => {
     document.body.innerHTML = `<div><button data-id="test">Hello World</button></div>`;
-    const element = document.querySelector('[data-id="test"]') as HTMLButtonElement;
+    const element = document.querySelector(
+      '[data-id="test"]'
+    ) as HTMLButtonElement;
     element.click();
-    expect(fn).toHaveBeenCalledWith(`await click('aria/button[name="Hello World"]');`);
+    expect(fn).toHaveBeenCalledWith(
+      `await click('aria/button[name="Hello World"]');`
+    );
   });
 
   it('should only emit submit line for click events on submit buttons in forms', () => {
     document.body.innerHTML = `<form onsubmit="return false;"><button data-id="test">Hello World</button></form>`;
-    const element = document.querySelector('[data-id="test"]') as HTMLButtonElement;
+    const element = document.querySelector(
+      '[data-id="test"]'
+    ) as HTMLButtonElement;
     element.click();
     expect(fn).toHaveBeenCalledWith(`await submit('body > form');`);
   });
 
   it('should emit type lines when a form input was changed', () => {
     document.body.innerHTML = `<form onsubmit="return false;"><input data-id="test"/></form>`;
-    const element = document.querySelector('[data-id="test"]') as HTMLInputElement;
+    const element = document.querySelector(
+      '[data-id="test"]'
+    ) as HTMLInputElement;
     element.value = 'Hello World';
     element.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(fn).toHaveBeenCalledWith(`await type('body > form > input', 'Hello World');`);
+    expect(fn).toHaveBeenCalledWith(
+      `await type('body > form > input', 'Hello World');`
+    );
   });
 
   it('should emit type lines with correctly escaped single quotes', () => {
     document.body.innerHTML = `<form onsubmit="return false;"><input data-id="test"/></form>`;
-    const element = document.querySelector('[data-id="test"]') as HTMLInputElement;
-    element.value = 'You\'re welcome';
+    const element = document.querySelector(
+      '[data-id="test"]'
+    ) as HTMLInputElement;
+    element.value = "You're welcome";
     element.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(fn).toHaveBeenCalledWith(`await type('body > form > input', 'You\\'re welcome');`);
+    expect(fn).toHaveBeenCalledWith(
+      `await type('body > form > input', 'You\\'re welcome');`
+    );
   });
 });

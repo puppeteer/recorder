@@ -79,5 +79,4 @@ describe('CSS Path', () => {
     const path = cssPath(node);
     expect(path).toBe('body > input[type="email"]');
   });
-
 });
