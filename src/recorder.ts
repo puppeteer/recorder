@@ -16,6 +16,7 @@
 
 import * as puppeteer from 'puppeteer';
 import { Readable } from 'stream';
+import { cssPath } from './helpers';
 
 let client: puppeteer.CDPSession;
 let paused: Promise<void>;
@@ -33,6 +34,17 @@ async function getBrowserInstance(options: RecorderOptions) {
       defaultViewport: null,
     });
   }
+}
+
+export async function getSelector(objectId: string) {
+  const ariaSelector = await getAriaSelector(objectId);
+  if (ariaSelector) return ariaSelector;
+  // @ts-ignore
+  const { result } = await client.send('Runtime.callFunctionOn', {
+    functionDeclaration: cssPath.toString(),
+    objectId,
+  });
+  return result.value;
 }
 
 export async function getAriaSelector(
@@ -77,61 +89,70 @@ export default async (url: string, options: RecorderOptions = {}) => {
   await client.send('DOMDebugger.setEventListenerBreakpoint', {
     eventName: 'submit',
   });
+
   const resume = async () => {
     await client.send('Debugger.setSkipAllPauses', { skip: true });
     await client.send('Debugger.resume', { terminateOnResume: false });
     await client.send('Debugger.setSkipAllPauses', { skip: false });
   };
 
+  const handleClickEvent = async (localFrame) => {
+    // @ts-ignore
+    const pointerEvent = localFrame.find(
+      (prop) =>
+        prop.value.className === 'PointerEvent' ||
+        prop.value.className === 'MouseEvent'
+    );
+    const pointerEventProps = await client.send('Runtime.getProperties', {
+      objectId: pointerEvent.value.objectId,
+    });
+    // @ts-ignore
+    const target = pointerEventProps.result.find(
+      (prop) => prop.name === 'target'
+    );
+    const selector = await getSelector(target.value.objectId);
+    if (selector) {
+      addLineToPuppeteerScript(`await click('${selector}');`);
+    } else {
+      console.log(`failed to generate selector`);
+    }
+  };
+
+  const handleChangeEvent = async (localFrame) => {
+    // @ts-ignore
+    const changeEvent = localFrame.find(
+      (prop) => prop.value.className === 'Event'
+    );
+    const changeEventProps = await client.send('Runtime.getProperties', {
+      objectId: changeEvent.value.objectId,
+    });
+    // @ts-ignore
+    const target = changeEventProps.result.find(
+      (prop) => prop.name === 'target'
+    );
+    const targetValue = await client.send('Runtime.callFunctionOn', {
+      functionDeclaration: 'function() { return this.value }',
+      objectId: target.value.objectId,
+    });
+    // @ts-ignore
+    const value = targetValue.result.value;
+    const escapedValue = value.replace(/'/g, "\\'");
+    const selector = await getAriaSelector(target.value.objectId);
+    addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
+  };
+
   client.on('Debugger.paused', async function (params) {
     paused = this;
     const event = params.data.eventName;
     const localFrame = params.callFrames[0].scopeChain[0];
-    const properties = await client.send('Runtime.getProperties', {
+    // @ts-ignore
+    const { result } = await client.send('Runtime.getProperties', {
       objectId: localFrame.object.objectId,
     });
     if (event === 'listener:click') {
-      // @ts-ignore
-      // console.log(`kicked click listener: ${JSON.stringify(properties.result)}`);
-      // @ts-ignore
-      const pointerEvent = properties.result.find(
-        (prop) => prop.value.className === 'PointerEvent' || prop.value.className === 'MouseEvent'
-      );
-      const pointerEventProps = await client.send('Runtime.getProperties', {
-        objectId: pointerEvent.value.objectId,
-      });
-      // @ts-ignore
-      const target = pointerEventProps.result.find(
-        (prop) => prop.name === 'target'
-      );
-      const selector = await getAriaSelector(target.value.objectId);
-      if (selector) {
-        addLineToPuppeteerScript(`await click('${selector}');`);
-      } else {
-        console.log(`failed to generate selector`);
-      }
+      await handleClickEvent(result);
     } else if (event === 'listener:change') {
-      // @ts-ignore
-      // console.log(`kicked change listener: ${JSON.stringify(properties.result)}`);
-      // @ts-ignore
-      const changeEvent = properties.result.find(
-        (prop) => prop.value.className === 'Event'
-      );
-      const changeEventProps = await client.send('Runtime.getProperties', {
-        objectId: changeEvent.value.objectId,
-      });
-      // @ts-ignore
-      const target = changeEventProps.result.find(
-        (prop) => prop.name === 'target'
-      );
-      const targetValue = await client.send('Runtime.callFunctionOn', {functionDeclaration: 'function() { return this.value }', objectId: target.value.objectId});
-      // @ts-ignore
-      // console.log(`target: ${JSON.stringify(targetValue)}`);
-      // @ts-ignore
-      const value = targetValue.result.value;
-      const escapedValue = value.replace(/'/g, '\\\'');
-      const selector = await getAriaSelector(target.value.objectId);
-      addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
+      await handleChangeEvent(result);
     }
     await resume();
   });
@@ -142,16 +163,9 @@ export default async (url: string, options: RecorderOptions = {}) => {
     output.push(data + '\n');
   };
 
-  /*
-  await page.exposeFunction(
-    'addLineToPuppeteerScript',
-    addLineToPuppeteerScript
-  );
-  page.evaluateOnNewDocument(loadAndPatchInjectedModule());
-  */
   page.evaluateOnNewDocument(() => {
-    window.addEventListener('change', async (e) => { }, true);
-    window.addEventListener('click', async (e) => { }, true);
+    window.addEventListener('change', async (e) => {}, true);
+    window.addEventListener('click', async (e) => {}, true);
   });
 
   // Setup puppeteer

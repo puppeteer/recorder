@@ -20,7 +20,7 @@
     "@types/puppeteer": "^3.0.1",
     "@typescript-eslint/eslint-plugin": "^4.5.0",
     "@typescript-eslint/parser": "^4.5.0",
-    "browserify": "^16.5.1",
+    "devtools-protocol": "0.0.819498",
     "eslint": "^7.11.0",
     "eslint-config-prettier": "^6.12.0",
     "eslint-plugin-import": "^2.22.0",
