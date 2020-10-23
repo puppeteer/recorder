@@ -20,41 +20,57 @@ declare global {
   function addLineToPuppeteerScript(line: string): void;
 }
 
-window.addEventListener('click', (e) => {
-  // Let submit handle this case if the click is on a submit button
-  let currentElement = e.target as HTMLElement;
-  while (currentElement) {
-    if (isSubmitButton(currentElement)) {
-      return;
+window.addEventListener(
+  'click',
+  (e) => {
+    // Let submit handle this case if the click is on a submit button
+    let currentElement = e.target as HTMLElement;
+    while (currentElement) {
+      if (isSubmitButton(currentElement)) {
+        return;
+      }
+      currentElement = currentElement.parentElement;
     }
-    currentElement = currentElement.parentElement;
-  }
 
-  const selector = getSelectorForEvent(e);
-  addLineToPuppeteerScript(`await click('${selector}');`);
-}, true);
+    const selector = getSelectorForEvent(e);
+    addLineToPuppeteerScript(`await click('${selector}');`);
+  },
+  true
+);
 
-window.addEventListener('change', (e) => {
-  const value = (e.target as HTMLInputElement).value;
-  const escapedValue = value.replace(/'/g, '\\\'');
-  const selector = getSelectorForEvent(e);
-  addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
-}, true);
+window.addEventListener(
+  'change',
+  (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    const escapedValue = value.replace(/'/g, "\\'");
+    const selector = getSelectorForEvent(e);
+    addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
+  },
+  true
+);
 
-window.addEventListener('submit', (e) => {
-  const selector = getSelectorForEvent(e);
-  addLineToPuppeteerScript(`await submit('${selector}');`);
-}, true);
+window.addEventListener(
+  'submit',
+  (e) => {
+    const selector = getSelectorForEvent(e);
+    addLineToPuppeteerScript(`await submit('${selector}');`);
+  },
+  true
+);
 
-let scrollTimeout =  null;
-window.addEventListener('scroll', (e) => {
-  if(scrollTimeout) clearTimeout(scrollTimeout);
-  const prevScrollHeight = document.body.scrollHeight;
-  scrollTimeout = setTimeout(() => {
-    const currentScrollHeight = document.body.scrollHeight;
-    console.log(prevScrollHeight, currentScrollHeight);
-    if(currentScrollHeight > prevScrollHeight) {
-      addLineToPuppeteerScript(`await scrollToBottom();`);
-    }
-  }, 1000);
-}, true);
+let scrollTimeout = null;
+window.addEventListener(
+  'scroll',
+  (e) => {
+    if (scrollTimeout) clearTimeout(scrollTimeout);
+    const prevScrollHeight = document.body.scrollHeight;
+    scrollTimeout = setTimeout(() => {
+      const currentScrollHeight = document.body.scrollHeight;
+      console.log(prevScrollHeight, currentScrollHeight);
+      if (currentScrollHeight > prevScrollHeight) {
+        addLineToPuppeteerScript(`await scrollToBottom();`);
+      }
+    }, 1000);
+  },
+  true
+);

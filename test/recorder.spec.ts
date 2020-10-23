@@ -18,25 +18,25 @@
  * limitations under the License.
  */
 
-import * as puppeteer from "puppeteer";
-import recorder from "../src/recorder";
-import * as express from "express";
+import * as puppeteer from 'puppeteer';
+import recorder from '../src/recorder';
+import * as express from 'express';
 
-import { Readable } from "stream";
+import { Readable } from 'stream';
 
-describe("Recorder", () => {
+describe('Recorder', () => {
   let browser, page, app, url, server;
 
   async function getScriptFromStream(stream: Readable) {
-    let script = "";
-    stream.on("data", (data) => {
+    let script = '';
+    stream.on('data', (data) => {
       script += data;
     });
 
-    await new Promise((r) => stream.once("end", r));
+    await new Promise((r) => stream.once('end', r));
 
-    const pattern = url.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
-    return script.replace(new RegExp(pattern, "g"), "[url]");
+    const pattern = url.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+    return script.replace(new RegExp(pattern, 'g'), '[url]');
   }
 
   beforeAll(async () => {
@@ -46,9 +46,9 @@ describe("Recorder", () => {
     });
 
     app = express();
-    app.use(express.static(__dirname + "/public"));
+    app.use(express.static(__dirname + '/public'));
     return new Promise((resolve) => {
-      server = app.listen(0, "127.0.0.1", () => {
+      server = app.listen(0, '127.0.0.1', () => {
         url = `http://localhost:${server.address().port}/`;
         resolve();
       });
@@ -66,12 +66,12 @@ describe("Recorder", () => {
     await prevPage.close();
   });
 
-  it("should record a simple test", async () => {
+  it('should record a simple test', async () => {
     const output = await recorder(url, {
       wsEndpoint: browser.wsEndpoint(),
     });
 
-    await page.click("#button");
+    await page.click('#button');
     await browser.newPage();
     await page.close();
 
@@ -84,12 +84,12 @@ describe("Recorder", () => {
           `);
   });
 
-  it("should output an url expectation when navigating", async () => {
+  it('should output an url expectation when navigating', async () => {
     const output = await recorder(url, {
       wsEndpoint: browser.wsEndpoint(),
     });
 
-    await page.click("#link");
+    await page.click('#link');
     await browser.newPage();
     await page.close();
 
@@ -103,13 +103,13 @@ describe("Recorder", () => {
           `);
   });
 
-  it("should output an url expectation only for the main frame when navigating", async () => {
+  it('should output an url expectation only for the main frame when navigating', async () => {
     const output = await recorder(url, {
       wsEndpoint: browser.wsEndpoint(),
     });
 
-    await page.click("#iframes");
-    await page.click("#button");
+    await page.click('#iframes');
+    await page.click('#button');
     await browser.newPage();
     await page.close();
 

@@ -26,7 +26,10 @@ declare const __dirname;
 
 const aria = loadAndPatchAriaModule();
 
-const ariaSelectorEngine = new Function('element', 'selector', `
+const ariaSelectorEngine = new Function(
+  'element',
+  'selector',
+  `
   // Inject the aria library in case it has not been loaded yet
   if(!globalThis.aria) {${aria}}
   
@@ -66,19 +69,20 @@ const ariaSelectorEngine = new Function('element', 'selector', `
   }
 
   return null;
-`);
+`
+);
 
 // @ts-ignore
 puppeteer.__experimental_registerCustomQueryHandler('aria', ariaSelectorEngine);
 
-const timeout = t => new Promise(cb => timers.setTimeout(cb, t));
+const timeout = (t) => new Promise((cb) => timers.setTimeout(cb, t));
 
 let browser, page;
 let delay = 100;
 const debug = process.env.DEBUG;
 
 interface RunnerOptions {
-  delay: number
+  delay: number;
 }
 
 async function beforeStep(...args) {
@@ -94,10 +98,12 @@ async function beforeStep(...args) {
     output: process.stdout,
   });
 
-  await new Promise(resolve => rl.question('Press enter to execute this step?', ans => {
-    rl.close();
-    resolve(ans);
-  }));
+  await new Promise((resolve) =>
+    rl.question('Press enter to execute this step?', (ans) => {
+      rl.close();
+      resolve(ans);
+    })
+  );
 }
 
 export async function open(url, options: RunnerOptions, cb) {
@@ -128,7 +134,7 @@ export async function type(selector, value) {
 
 export async function submit(selector) {
   await beforeStep('submit', selector);
-  await page.$eval(selector, form => form.requestSubmit());
+  await page.$eval(selector, (form) => form.requestSubmit());
 }
 
 export async function scrollToBottom() {

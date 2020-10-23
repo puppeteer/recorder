@@ -16,24 +16,28 @@
  * limitations under the License.
  */
 
+/* eslint-disable @typescript-eslint/no-var-requires */
+
 const [, , url] = process.argv;
 
 if (!url) {
   console.error('url required.');
   process.exit(1);
 } else {
-  require('./recorder').default(url).then(output => {
-    output.pipe(process.stdout);
-    
-    // Check if the output should also be written to a file
-    const fileNameIndex = process.argv.indexOf('--output');
-    if(fileNameIndex !== -1) {
-      if(fileNameIndex === process.argv.length) {
-        throw new Error('Filename required when passing --output.');
-      }
+  require('./recorder')
+    .default(url)
+    .then((output) => {
+      output.pipe(process.stdout);
 
-      const fileName = process.argv[fileNameIndex + 1];
-      output.pipe(require('fs').createWriteStream(fileName, {}));
-    }
-  });
+      // Check if the output should also be written to a file
+      const fileNameIndex = process.argv.indexOf('--output');
+      if (fileNameIndex !== -1) {
+        if (fileNameIndex === process.argv.length) {
+          throw new Error('Filename required when passing --output.');
+        }
+
+        const fileName = process.argv[fileNameIndex + 1];
+        output.pipe(require('fs').createWriteStream(fileName, {}));
+      }
+    });
 }

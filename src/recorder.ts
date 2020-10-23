@@ -19,7 +19,7 @@ import { Readable } from 'stream';
 import { loadAndPatchInjectedModule } from './aria';
 
 interface RecorderOptions {
-  wsEndpoint?: string
+  wsEndpoint?: string;
 }
 
 async function getBrowserInstance(options: RecorderOptions) {
@@ -39,23 +39,25 @@ export default async (url: string, options: RecorderOptions = {}) => {
   }
 
   const output = new Readable({
-    read(size) { },
+    read(size) {},
   });
   output.setEncoding('utf8');
   const browser = await getBrowserInstance(options);
-  const page = await browser.pages().then(pages => pages[0]);
+  const page = await browser.pages().then((pages) => pages[0]);
 
   let identation = 0;
   const addLineToPuppeteerScript = (line: string) => {
     const data = '  '.repeat(identation) + line;
     output.push(data + '\n');
-  }
+  };
 
   page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
   page.evaluateOnNewDocument(loadAndPatchInjectedModule());
 
   // Setup puppeteer
-  addLineToPuppeteerScript(`const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');`)
+  addLineToPuppeteerScript(
+    `const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');`
+  );
   addLineToPuppeteerScript(`open('${url}', {}, async (page) => {`);
   identation += 1;
 
@@ -65,9 +67,10 @@ export default async (url: string, options: RecorderOptions = {}) => {
   // Add expectations for mainframe navigations
   page.on('framenavigated', (frame: puppeteer.Frame) => {
     if (frame.parentFrame()) return;
-    addLineToPuppeteerScript(`expect(page.url()).resolves.toBe('${frame.url()}');`);
+    addLineToPuppeteerScript(
+      `expect(page.url()).resolves.toBe('${frame.url()}');`
+    );
   });
-
 
   async function close() {
     identation -= 1;
@@ -90,4 +93,4 @@ export default async (url: string, options: RecorderOptions = {}) => {
   });
 
   return output;
-}
+};

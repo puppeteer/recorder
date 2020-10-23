@@ -33,19 +33,19 @@ class Step {
 }
 
 function idSelector(id) {
-  return "#" + id;
+  return '#' + id;
 }
 
 function cssPathStep(node, isTargetNode) {
   if (node.nodeType !== Node.ELEMENT_NODE) {
     return null;
   }
-  const id = node.getAttribute("id");
+  const id = node.getAttribute('id');
   if (id) {
     return new Step(idSelector(id), true);
   }
   const nodeNameLower = node.nodeName.toLowerCase();
-  if (["html", "body", "head"].includes(nodeNameLower)) {
+  if (['html', 'body', 'head'].includes(nodeNameLower)) {
     return new Step(nodeNameLower, true);
   }
   const nodeName = node.nodeName;
@@ -59,7 +59,11 @@ function cssPathStep(node, isTargetNode) {
   let elementIndex = -1;
   const siblings = parent.children;
   const ownClassNames = new Set(node.classList);
-  for (let i = 0; (ownIndex === -1 || !needsNthChild) && i < siblings.length; i++) {
+  for (
+    let i = 0;
+    (ownIndex === -1 || !needsNthChild) && i < siblings.length;
+    i++
+  ) {
     const sibling = siblings[i];
     if (sibling.nodeType !== Node.ELEMENT_NODE) {
       continue;
@@ -90,19 +94,20 @@ function cssPathStep(node, isTargetNode) {
     }
   }
   let result = nodeNameLower;
-  if (isTargetNode &&
-    nodeName.toLowerCase() === "input" &&
-    node.getAttribute("type") &&
-    !node.getAttribute("id") &&
-    !node.getAttribute("class")) {
-    result += `[type="${node.getAttribute("type")}"]`;
+  if (
+    isTargetNode &&
+    nodeName.toLowerCase() === 'input' &&
+    node.getAttribute('type') &&
+    !node.getAttribute('id') &&
+    !node.getAttribute('class')
+  ) {
+    result += `[type="${node.getAttribute('type')}"]`;
   }
   if (needsNthChild) {
     result += `:nth-child(${ownIndex + 1})`;
-  }
-  else if (needsClassNames) {
+  } else if (needsClassNames) {
     for (const className of ownClassNames) {
-      result += "." + className;
+      result += '.' + className;
     }
   }
   return new Step(result, false);
@@ -110,7 +115,7 @@ function cssPathStep(node, isTargetNode) {
 
 export function cssPath(node) {
   if (node.nodeType !== Node.ELEMENT_NODE) {
-    return "";
+    return '';
   }
   const steps = [];
   let currentNode = node;
@@ -126,5 +131,5 @@ export function cssPath(node) {
     currentNode = currentNode.parentNode;
   }
   steps.reverse();
-  return steps.join(" > ");
+  return steps.join(' > ');
 }
