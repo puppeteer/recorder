@@ -18,21 +18,27 @@
  * limitations under the License.
  */
 
-import { readFileSync } from 'fs';
-import * as path from 'path';
 import * as puppeteer from 'puppeteer';
+import { getSelector, isSubmitButton } from '../src/recorder';
 
-let browser: puppeteer.Browser, page: puppeteer.Page;
-let isSubmitButton, getSelector;
+declare module 'puppeteer' {
+  interface ElementHandle {
+    _remoteObject: { objectId: string };
+  }
+  interface Page {
+    _client: puppeteer.CDPSession;
+  }
+}
 
-describe.skip('DOM', () => {
+let browser: puppeteer.Browser,
+  page: puppeteer.Page,
+  client: puppeteer.CDPSession;
+
+describe('DOM', () => {
   beforeAll(async () => {
     browser = await puppeteer.launch({ defaultViewport: null, headless: true });
     page = await browser.newPage();
-    const script = readFileSync(path.join(__dirname, 'lib/dom-helpers.js'), {
-      encoding: 'utf-8',
-    });
-    await page.evaluate(script);
+    client = page._client;
   });
 
   afterAll(async () => {
@@ -44,8 +50,9 @@ describe.skip('DOM', () => {
       await page.setContent(`<form><button id='button' /></form>`);
 
       const element = await page.$('button');
-      const isSubmitCheck = await element.evaluate((element) =>
-        isSubmitButton(element)
+      const isSubmitCheck = await isSubmitButton(
+        client,
+        element._remoteObject.objectId
       );
       expect(isSubmitCheck).toBe(true);
     });
@@ -53,8 +60,9 @@ describe.skip('DOM', () => {
     it('should return false if the button is not a submit button', async () => {
       await page.setContent(`<button id='button' />`);
       const element = await page.$('button');
-      const isSubmitCheck = await element.evaluate((element) =>
-        isSubmitButton(element)
+      const isSubmitCheck = await isSubmitButton(
+        client,
+        element._remoteObject.objectId
       );
       expect(isSubmitCheck).toBe(false);
     });
@@ -67,8 +75,9 @@ describe.skip('DOM', () => {
       );
 
       const element = await page.$('button');
-      const selector = await element.evaluate((element) =>
-        getSelector(element)
+      const selector = await getSelector(
+        client,
+        element._remoteObject.objectId
       );
       expect(selector).toBe('aria/Hello World[role="button"]');
     });
@@ -79,8 +88,9 @@ describe.skip('DOM', () => {
       );
 
       const element = await page.$('button');
-      const selector = await element.evaluate((element) =>
-        getSelector(element)
+      const selector = await getSelector(
+        client,
+        element._remoteObject.objectId
       );
       expect(selector).toBe('aria/Hello World[role="button"]');
     });
@@ -91,8 +101,9 @@ describe.skip('DOM', () => {
       );
 
       const element = await page.$('#button');
-      const selector = await element.evaluate((element) =>
-        getSelector(element)
+      const selector = await getSelector(
+        client,
+        element._remoteObject.objectId
       );
       expect(selector).toBe('aria/Hello World[role="button"]');
     });
@@ -103,8 +114,9 @@ describe.skip('DOM', () => {
       );
 
       const element = await page.$('#button');
-      const selector = await element.evaluate((element) =>
-        getSelector(element)
+      const selector = await getSelector(
+        client,
+        element._remoteObject.objectId
       );
       expect(selector).toBe('#button');
     });
@@ -129,7 +141,7 @@ describe.skip('DOM', () => {
         `
       );
       const link = await page.$('a');
-      const selector = await link.evaluate((element) => getSelector(element));
+      const selector = await getSelector(client, link._remoteObject.objectId);
       expect(selector).toBe('aria/Hello World[role="link"]');
     });
   });

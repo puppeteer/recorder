@@ -16,9 +16,24 @@
 
 import * as puppeteer from 'puppeteer';
 import { Readable } from 'stream';
-import { cssPath, isSubmitButton } from './helpers';
+import * as helpers from './helpers';
+import * as protocol from 'devtools-protocol';
+import { ProtocolMapping } from 'devtools-protocol/types/protocol-mapping.js';
 
-let client: puppeteer.CDPSession;
+declare module 'puppeteer' {
+  interface ElementHandle {
+    _remoteObject: { objectId: string };
+  }
+  interface Page {
+    _client: puppeteer.CDPSession;
+  }
+  interface CDPSession {
+    send<T extends keyof ProtocolMapping.Commands>(
+      method: T,
+      ...paramArgs: ProtocolMapping.Commands[T]['paramsType']
+    ): Promise<ProtocolMapping.Commands[T]['returnType']>;
+  }
+}
 
 interface RecorderOptions {
   wsEndpoint?: string;
@@ -35,26 +50,24 @@ async function getBrowserInstance(options: RecorderOptions) {
   }
 }
 
-export async function getSelector(objectId: string): Promise<string | null> {
-  const ariaSelector = await getAriaSelector(objectId);
-  if (ariaSelector) return ariaSelector;
-  // @ts-ignore
-  const { result } = await client.send('Runtime.callFunctionOn', {
-    functionDeclaration: cssPath.toString(),
+export async function isSubmitButton(
+  client: puppeteer.CDPSession,
+  objectId: string
+): Promise<boolean> {
+  const isSubmitButtonResponse = await client.send('Runtime.callFunctionOn', {
+    functionDeclaration: helpers.isSubmitButton.toString(),
     objectId,
   });
-  return result.value;
+  return isSubmitButtonResponse.result.value;
 }
 
-export async function getAriaSelector(
+export async function getSelector(
+  client: puppeteer.CDPSession,
   objectId: string
 ): Promise<string | null> {
-  // @ts-ignore
-  const { nodes } = await client
-    .send('Accessibility.queryAXTree', {
-      objectId,
-    })
-    .catch((error) => console.log(error.message));
+  const { nodes } = await client.send('Accessibility.queryAXTree', {
+    objectId,
+  });
   if (nodes.length === 0) return null;
   const axNode = nodes[0];
   const name = axNode.name.value;
@@ -62,7 +75,11 @@ export async function getAriaSelector(
   if (name) {
     return `aria/${name}[role="${role}"]`;
   }
-  return null;
+  const { result } = await client.send('Runtime.callFunctionOn', {
+    functionDeclaration: helpers.cssPath.toString(),
+    objectId,
+  });
+  return result.value;
 }
 
 export default async (
@@ -79,8 +96,7 @@ export default async (
   output.setEncoding('utf8');
   const browser = await getBrowserInstance(options);
   const page = await browser.pages().then((pages) => pages[0]);
-  // @ts-ignore
-  client = page._client;
+  const client = page._client;
   await client.send('Debugger.enable', {});
   await client.send('DOMDebugger.setEventListenerBreakpoint', {
     eventName: 'click',
@@ -97,9 +113,8 @@ export default async (
       interestingClassNames.includes(prop.value.className)
     );
     const eventProperties = await client.send('Runtime.getProperties', {
-      objectId: event.value.objectId,
+      objectId: event.value.objectId as string,
     });
-    // @ts-ignore
     const target = eventProperties.result.find(
       (prop) => prop.name === 'target'
     );
@@ -120,17 +135,11 @@ export default async (
       'MouseEvent',
       'PointerEvent',
     ]);
-    // @ts-ignore
-    const isSubmitButtonResponse = await client.send('Runtime.callFunctionOn', {
-      functionDeclaration: isSubmitButton.toString(),
-      objectId: targetId,
-    });
     // Let submit handle this case if the click is on a submit button
-    // @ts-ignore
-    if (isSubmitButtonResponse.result.value) {
+    if (await isSubmitButton(client, targetId)) {
       return skip();
     }
-    const selector = await getSelector(targetId);
+    const selector = await getSelector(client, targetId);
     if (selector) {
       addLineToPuppeteerScript(`await click('${selector}');`);
     } else {
@@ -141,7 +150,7 @@ export default async (
 
   const handleSubmitEvent = async (localFrame) => {
     const targetId = await findTargetId(localFrame, ['SubmitEvent']);
-    const selector = await getSelector(targetId);
+    const selector = await getSelector(client, targetId);
     if (selector) {
       addLineToPuppeteerScript(`await submit('${selector}');`);
     } else {
@@ -156,18 +165,18 @@ export default async (
       functionDeclaration: 'function() { return this.value }',
       objectId: targetId,
     });
-    // @ts-ignore
     const value = targetValue.result.value;
     const escapedValue = value.replace(/'/g, "\\'");
-    const selector = await getAriaSelector(targetId);
+    const selector = await getSelector(client, targetId);
     addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
     await resume();
   };
 
-  client.on('Debugger.paused', async function (params) {
-    const eventName = params.data.eventName;
-    const localFrame = params.callFrames[0].scopeChain[0];
-    // @ts-ignore
+  client.on('Debugger.paused', async function (
+    pausedEvent: protocol.Protocol.Debugger.PausedEvent
+  ) {
+    const eventName = pausedEvent.data.eventName;
+    const localFrame = pausedEvent.callFrames[0].scopeChain[0];
     const { result } = await client.send('Runtime.getProperties', {
       objectId: localFrame.object.objectId,
     });
