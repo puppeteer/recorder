@@ -19,9 +19,16 @@
  * https://source.chromium.org/chromium/chromium/src/+/master:third_party/devtools-frontend/src/front_end/elements/DOMPath.js
  */
 
-export function cssPath() {
-  const node = this;
-  if (node.nodeType !== Node.ELEMENT_NODE) {
+export function isSubmitButton(): boolean {
+  return (
+    this.tagName === 'BUTTON' &&
+    (this as HTMLButtonElement).type === 'submit' &&
+    (this as HTMLButtonElement).form !== null
+  );
+}
+
+export function cssPath(): string {
+  if (this.nodeType !== Node.ELEMENT_NODE) {
     return '';
   }
   function idSelector(id: string) {
@@ -118,9 +125,10 @@ export function cssPath() {
     return new Step(result, false);
   }
   const steps = [];
-  let currentNode = node;
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  let currentNode = this;
   while (currentNode) {
-    const step = cssPathStep(currentNode, currentNode === node);
+    const step = cssPathStep(currentNode, currentNode === this);
     if (!step) {
       break;
     }

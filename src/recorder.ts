@@ -16,10 +16,9 @@
 
 import * as puppeteer from 'puppeteer';
 import { Readable } from 'stream';
-import { cssPath } from './helpers';
+import { cssPath, isSubmitButton } from './helpers';
 
 let client: puppeteer.CDPSession;
-let paused: Promise<void>;
 
 interface RecorderOptions {
   wsEndpoint?: string;
@@ -36,7 +35,7 @@ async function getBrowserInstance(options: RecorderOptions) {
   }
 }
 
-export async function getSelector(objectId: string) {
+export async function getSelector(objectId: string): Promise<string | null> {
   const ariaSelector = await getAriaSelector(objectId);
   if (ariaSelector) return ariaSelector;
   // @ts-ignore
@@ -66,7 +65,10 @@ export async function getAriaSelector(
   return null;
 }
 
-export default async (url: string, options: RecorderOptions = {}) => {
+export default async (
+  url: string,
+  options: RecorderOptions = {}
+): Promise<Readable> => {
   if (!url.startsWith('http')) {
     url = 'https://' + url;
   }
@@ -90,71 +92,94 @@ export default async (url: string, options: RecorderOptions = {}) => {
     eventName: 'submit',
   });
 
+  const findTargetId = async (localFrame, interestingClassNames: string[]) => {
+    const event = localFrame.find((prop) =>
+      interestingClassNames.includes(prop.value.className)
+    );
+    const eventProperties = await client.send('Runtime.getProperties', {
+      objectId: event.value.objectId,
+    });
+    // @ts-ignore
+    const target = eventProperties.result.find(
+      (prop) => prop.name === 'target'
+    );
+    return target.value.objectId;
+  };
+
   const resume = async () => {
     await client.send('Debugger.setSkipAllPauses', { skip: true });
     await client.send('Debugger.resume', { terminateOnResume: false });
     await client.send('Debugger.setSkipAllPauses', { skip: false });
   };
+  const skip = async () => {
+    await client.send('Debugger.resume', { terminateOnResume: false });
+  };
 
   const handleClickEvent = async (localFrame) => {
+    const targetId = await findTargetId(localFrame, [
+      'MouseEvent',
+      'PointerEvent',
+    ]);
     // @ts-ignore
-    const pointerEvent = localFrame.find(
-      (prop) =>
-        prop.value.className === 'PointerEvent' ||
-        prop.value.className === 'MouseEvent'
-    );
-    const pointerEventProps = await client.send('Runtime.getProperties', {
-      objectId: pointerEvent.value.objectId,
+    const isSubmitButtonResponse = await client.send('Runtime.callFunctionOn', {
+      functionDeclaration: isSubmitButton.toString(),
+      objectId: targetId,
     });
+    // Let submit handle this case if the click is on a submit button
     // @ts-ignore
-    const target = pointerEventProps.result.find(
-      (prop) => prop.name === 'target'
-    );
-    const selector = await getSelector(target.value.objectId);
+    if (isSubmitButtonResponse.result.value) {
+      return skip();
+    }
+    const selector = await getSelector(targetId);
     if (selector) {
       addLineToPuppeteerScript(`await click('${selector}');`);
     } else {
       console.log(`failed to generate selector`);
     }
+    await resume();
+  };
+
+  const handleSubmitEvent = async (localFrame) => {
+    const targetId = await findTargetId(localFrame, ['SubmitEvent']);
+    const selector = await getSelector(targetId);
+    if (selector) {
+      addLineToPuppeteerScript(`await submit('${selector}');`);
+    } else {
+      console.log(`failed to generate selector`);
+    }
+    await resume();
   };
 
   const handleChangeEvent = async (localFrame) => {
-    // @ts-ignore
-    const changeEvent = localFrame.find(
-      (prop) => prop.value.className === 'Event'
-    );
-    const changeEventProps = await client.send('Runtime.getProperties', {
-      objectId: changeEvent.value.objectId,
-    });
-    // @ts-ignore
-    const target = changeEventProps.result.find(
-      (prop) => prop.name === 'target'
-    );
+    const targetId = await findTargetId(localFrame, ['Event']);
     const targetValue = await client.send('Runtime.callFunctionOn', {
       functionDeclaration: 'function() { return this.value }',
-      objectId: target.value.objectId,
+      objectId: targetId,
     });
     // @ts-ignore
     const value = targetValue.result.value;
     const escapedValue = value.replace(/'/g, "\\'");
-    const selector = await getAriaSelector(target.value.objectId);
+    const selector = await getAriaSelector(targetId);
     addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
+    await resume();
   };
 
   client.on('Debugger.paused', async function (params) {
-    paused = this;
-    const event = params.data.eventName;
+    const eventName = params.data.eventName;
     const localFrame = params.callFrames[0].scopeChain[0];
     // @ts-ignore
     const { result } = await client.send('Runtime.getProperties', {
       objectId: localFrame.object.objectId,
     });
-    if (event === 'listener:click') {
+    if (eventName === 'listener:click') {
       await handleClickEvent(result);
-    } else if (event === 'listener:change') {
+    } else if (eventName === 'listener:submit') {
+      await handleSubmitEvent(result);
+    } else if (eventName === 'listener:change') {
       await handleChangeEvent(result);
+    } else {
+      await skip();
     }
-    await resume();
   });
 
   let identation = 0;
@@ -164,8 +189,9 @@ export default async (url: string, options: RecorderOptions = {}) => {
   };
 
   page.evaluateOnNewDocument(() => {
-    window.addEventListener('change', async (e) => {}, true);
-    window.addEventListener('click', async (e) => {}, true);
+    window.addEventListener('change', (e) => {}, true);
+    window.addEventListener('click', (e) => {}, true);
+    window.addEventListener('submit', (e) => {}, true);
   });
 
   // Setup puppeteer
@@ -181,7 +207,6 @@ export default async (url: string, options: RecorderOptions = {}) => {
   // Add expectations for mainframe navigations
   page.on('framenavigated', async (frame: puppeteer.Frame) => {
     if (frame.parentFrame()) return;
-    await paused;
     addLineToPuppeteerScript(
       `expect(page.url()).resolves.toBe('${frame.url()}');`
     );

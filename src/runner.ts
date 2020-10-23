@@ -23,7 +23,7 @@ export { expect };
 
 declare const __dirname;
 
-const timeout = t => new Promise(cb => timers.setTimeout(cb, t));
+const timeout = (t) => new Promise((cb) => timers.setTimeout(cb, t));
 
 let browser, page;
 let delay = 100;
