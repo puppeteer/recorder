@@ -47,7 +47,7 @@ describe('DOM', () => {
 
   describe('isSubmitButton', () => {
     it('should return true if the button is a submit button', async () => {
-      await page.setContent(`<form><button id='button' /></form>`);
+      await page.setContent(`<form><button id="button"</button></form>`);
 
       const element = await page.$('button');
       const isSubmitCheck = await isSubmitButton(
@@ -58,7 +58,7 @@ describe('DOM', () => {
     });
 
     it('should return false if the button is not a submit button', async () => {
-      await page.setContent(`<button id='button' />`);
+      await page.setContent(`<button id="button"></button>`);
       const element = await page.$('button');
       const isSubmitCheck = await isSubmitButton(
         client,
@@ -71,7 +71,7 @@ describe('DOM', () => {
   describe('getSelector', () => {
     it('should return the aria name if it is available', async () => {
       await page.setContent(
-        `<form><button id='button'>Hello World</button></form>`
+        `<form><button id="button">Hello World</button></form>`
       );
 
       const element = await page.$('button');
@@ -84,7 +84,7 @@ describe('DOM', () => {
 
     it('should return an aria name selector for the closest link or button', async () => {
       await page.setContent(
-        `<form><button><span id='button'>Hello World</span></button></form>`
+        `<form><button><span id="button">Hello World</span></button></form>`
       );
 
       const element = await page.$('button');
@@ -97,7 +97,7 @@ describe('DOM', () => {
 
     it.skip('should return an aria name selector for the closest link or button if the text is not an exact match', async () => {
       await page.setContent(
-        `<form><button><span id='button'>Hello</span> World</button></form>`
+        `<form><button><span id="button">Hello</span> World</button></form>`
       );
 
       const element = await page.$('#button');
@@ -110,7 +110,7 @@ describe('DOM', () => {
 
     it('should return css selector if the element is not identifiable by an aria selector', async () => {
       await page.setContent(
-        `<form><div><span id='button'>Hello</span> World</div></form>`
+        `<form><div><span id="button">Hello</span> World</div></form>`
       );
 
       const element = await page.$('#button');

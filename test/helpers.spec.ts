@@ -75,7 +75,7 @@ describe('CSS Path', () => {
   });
 
   it('should include the type for input elements', () => {
-    document.body.innerHTML = `<input type="email" data-id="test"/>`;
+    document.body.innerHTML = `<input type="email" data-id="test">`;
     const node = document.querySelector('[data-id="test"]');
 
     const path = cssPath(node);

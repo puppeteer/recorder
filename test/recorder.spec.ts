@@ -78,7 +78,7 @@ describe('Recorder', () => {
     await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
             "const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');
             open('[url]', {}, async (page) => {
-              await click('aria/Test Button[role=\\"button\\"]');
+              await click(\\"aria/Test Button[role=\\\\\\"button\\\\\\"]\\");
             });
             "
           `);
@@ -93,14 +93,16 @@ describe('Recorder', () => {
     await browser.newPage();
     await page.close();
 
-    await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
+    await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(
+      `
             "const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');
             open('[url]', {}, async (page) => {
-              await click('aria/Test Link[role=\\"link\\"]');
-              expect(page.url()).resolves.toBe('[url]page2.html');
+              await click(\\"aria/Test Link[role=\\\\\\"link\\\\\\"]\\");
+              expect(page.url()).resolves.toBe(\\"[url]page2.html\\");
             });
             "
-          `);
+          `
+    );
   });
 
   it('should output an url expectation only for the main frame when navigating', async () => {
@@ -113,14 +115,16 @@ describe('Recorder', () => {
     await browser.newPage();
     await page.close();
 
-    await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(`
+    await expect(getScriptFromStream(output)).resolves.toMatchInlineSnapshot(
+      `
             "const {open, click, type, submit, expect, scrollToBottom} = require('@puppeteer/recorder');
             open('[url]', {}, async (page) => {
-              await click('aria/Go to iframes[role=\\"link\\"]');
-              expect(page.url()).resolves.toBe('[url]iframes.html');
-              await click('aria/Simple Button[role=\\"button\\"]');
+              await click(\\"aria/Go to iframes[role=\\\\\\"link\\\\\\"]\\");
+              expect(page.url()).resolves.toBe(\\"[url]iframes.html\\");
+              await click(\\"aria/Simple Button[role=\\\\\\"button\\\\\\"]\\");
             });
             "
-          `);
+          `
+    );
   });
 });

@@ -168,9 +168,10 @@ export default async (
       objectId: targetId,
     });
     const value = targetValue.result.value;
-    const escapedValue = value.replace(/'/g, "\\'");
     const selector = await getSelector(client, targetId);
-    addLineToPuppeteerScript(`await type(${JSON.stringify(selector)}, ${JSON.stringify(escapedValue)});`);
+    addLineToPuppeteerScript(
+      `await type(${JSON.stringify(selector)}, ${JSON.stringify(value)});`
+    );
     await resume();
   };
 
@@ -182,7 +183,6 @@ export default async (
     const { result } = await client.send('Runtime.getProperties', {
       objectId: localFrame.object.objectId,
     });
-    console.log(`paused on event: ${eventName}`);
     if (eventName === 'listener:click') {
       await handleClickEvent(result);
     } else if (eventName === 'listener:submit') {
