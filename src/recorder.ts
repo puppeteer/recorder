@@ -97,15 +97,17 @@ export default async (
   const browser = await getBrowserInstance(options);
   const page = await browser.pages().then((pages) => pages[0]);
   const client = page._client;
-  await client.send('Debugger.enable', {});
-  await client.send('DOMDebugger.setEventListenerBreakpoint', {
-    eventName: 'click',
-  });
-  await client.send('DOMDebugger.setEventListenerBreakpoint', {
-    eventName: 'change',
-  });
-  await client.send('DOMDebugger.setEventListenerBreakpoint', {
-    eventName: 'submit',
+  page.on('domcontentloaded', async () => {
+    await client.send('Debugger.enable', {});
+    await client.send('DOMDebugger.setEventListenerBreakpoint', {
+      eventName: 'click',
+    });
+    await client.send('DOMDebugger.setEventListenerBreakpoint', {
+      eventName: 'change',
+    });
+    await client.send('DOMDebugger.setEventListenerBreakpoint', {
+      eventName: 'submit',
+    });
   });
 
   const findTargetId = async (localFrame, interestingClassNames: string[]) => {
@@ -121,13 +123,13 @@ export default async (
     return target.value.objectId;
   };
 
-  const resume = async () => {
-    await client.send('Debugger.setSkipAllPauses', { skip: true });
-    await client.send('Debugger.resume', { terminateOnResume: false });
-    await client.send('Debugger.setSkipAllPauses', { skip: false });
-  };
   const skip = async () => {
     await client.send('Debugger.resume', { terminateOnResume: false });
+  };
+  const resume = async () => {
+    await client.send('Debugger.setSkipAllPauses', { skip: true });
+    await skip();
+    await client.send('Debugger.setSkipAllPauses', { skip: false });
   };
 
   const handleClickEvent = async (localFrame) => {
@@ -135,13 +137,13 @@ export default async (
       'MouseEvent',
       'PointerEvent',
     ]);
-    // Let submit handle this case if the click is on a submit button
+    // Let submit handle this case if the click is on a submit button.
     if (await isSubmitButton(client, targetId)) {
       return skip();
     }
     const selector = await getSelector(client, targetId);
     if (selector) {
-      addLineToPuppeteerScript(`await click('${selector}');`);
+      addLineToPuppeteerScript(`await click(${JSON.stringify(selector)});`);
     } else {
       console.log(`failed to generate selector`);
     }
@@ -152,7 +154,7 @@ export default async (
     const targetId = await findTargetId(localFrame, ['SubmitEvent']);
     const selector = await getSelector(client, targetId);
     if (selector) {
-      addLineToPuppeteerScript(`await submit('${selector}');`);
+      addLineToPuppeteerScript(`await submit(${JSON.stringify(selector)});`);
     } else {
       console.log(`failed to generate selector`);
     }
@@ -168,7 +170,7 @@ export default async (
     const value = targetValue.result.value;
     const escapedValue = value.replace(/'/g, "\\'");
     const selector = await getSelector(client, targetId);
-    addLineToPuppeteerScript(`await type('${selector}', '${escapedValue}');`);
+    addLineToPuppeteerScript(`await type(${JSON.stringify(selector)}, ${JSON.stringify(escapedValue)});`);
     await resume();
   };
 
@@ -180,6 +182,7 @@ export default async (
     const { result } = await client.send('Runtime.getProperties', {
       objectId: localFrame.object.objectId,
     });
+    console.log(`paused on event: ${eventName}`);
     if (eventName === 'listener:click') {
       await handleClickEvent(result);
     } else if (eventName === 'listener:submit') {
@@ -198,9 +201,9 @@ export default async (
   };
 
   page.evaluateOnNewDocument(() => {
-    window.addEventListener('change', (e) => {}, true);
-    window.addEventListener('click', (e) => {}, true);
-    window.addEventListener('submit', (e) => {}, true);
+    window.addEventListener('change', (event) => {}, true);
+    window.addEventListener('click', (event) => {}, true);
+    window.addEventListener('submit', (event) => {}, true);
   });
 
   // Setup puppeteer
@@ -217,7 +220,7 @@ export default async (
   page.on('framenavigated', async (frame: puppeteer.Frame) => {
     if (frame.parentFrame()) return;
     addLineToPuppeteerScript(
-      `expect(page.url()).resolves.toBe('${frame.url()}');`
+      `expect(page.url()).resolves.toBe(${JSON.stringify(frame.url())});`
     );
   });
 
