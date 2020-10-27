@@ -108,7 +108,7 @@ describe('DOM', () => {
       expect(selector).toBe('aria/Hello World[role="button"]');
     });
 
-    it('should return css selector if the element is not identifiable by an aria selector', async () => {
+    it('should return css selector if the element is not identifiable by an aria selector 1', async () => {
       await page.setContent(
         `<form><div><span id="button">Hello</span> World</div></form>`
       );
@@ -119,6 +119,17 @@ describe('DOM', () => {
         element._remoteObject.objectId
       );
       expect(selector).toBe('#button');
+    });
+
+    it('should return css selector if the element is not identifiable by an aria selector 2', async () => {
+      await page.setContent(`<form><div><span>Hello</span> World</div></form>`);
+
+      const element = await page.$('span');
+      const selector = await getSelector(
+        client,
+        element._remoteObject.objectId
+      );
+      expect(selector).toBe('body > form > div > span');
     });
 
     it('should pierce shadow roots to get an aria name', async () => {
