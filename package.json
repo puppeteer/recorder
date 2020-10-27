@@ -1,6 +1,6 @@
 {
   "name": "@puppeteer/recorder",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Interactively record puppeteer scripts",
   "main": "./lib/runner.js",
   "bin": {
