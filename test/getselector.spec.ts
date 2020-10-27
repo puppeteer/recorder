@@ -95,7 +95,7 @@ describe('DOM', () => {
       expect(selector).toBe('aria/Hello World[role="button"]');
     });
 
-    it.skip('should return an aria name selector for the closest link or button if the text is not an exact match', async () => {
+    it('should return an aria name selector for the closest link or button if the text is not an exact match', async () => {
       await page.setContent(
         `<form><button><span id="button">Hello</span> World</button></form>`
       );

@@ -19,6 +19,14 @@
  * https://source.chromium.org/chromium/chromium/src/+/master:third_party/devtools-frontend/src/front_end/elements/DOMPath.js
  */
 
+export function getParent(): Element {
+  if (this.parentNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+    return this.parentNode.host;
+  } else {
+    return this.parentElement;
+  }
+}
+
 export function isSubmitButton(): boolean {
   return (
     this.tagName === 'BUTTON' &&

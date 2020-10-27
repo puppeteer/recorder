@@ -65,15 +65,23 @@ export async function getSelector(
   client: puppeteer.CDPSession,
   objectId: string
 ): Promise<string | null> {
-  const { nodes } = await client.send('Accessibility.queryAXTree', {
-    objectId,
-  });
-  if (nodes.length === 0) return null;
-  const axNode = nodes[0];
-  const name = axNode.name.value;
-  const role = axNode.role.value;
-  if (name) {
-    return `aria/${name}[role="${role}"]`;
+  let currentObjectId = objectId;
+  while (currentObjectId) {
+    const { nodes } = await client.send('Accessibility.queryAXTree', {
+      objectId: currentObjectId,
+    });
+    if (nodes.length === 0) return null;
+    const axNode = nodes[0];
+    const name = axNode.name.value;
+    const role = axNode.role.value;
+    if (name) {
+      return `aria/${name}[role="${role}"]`;
+    }
+    const { result } = await client.send('Runtime.callFunctionOn', {
+      functionDeclaration: helpers.getParent.toString(),
+      objectId: currentObjectId,
+    });
+    currentObjectId = result.objectId;
   }
   const { result } = await client.send('Runtime.callFunctionOn', {
     functionDeclaration: helpers.cssPath.toString(),
