@@ -116,6 +116,13 @@ export default async (
     await client.send('DOMDebugger.setEventListenerBreakpoint', {
       eventName: 'submit',
     });
+    /* The heuristics we have for recording scrolling are quite fragile and
+     * does not capture a reasonable set of scroll actions so we have decided
+     * to disable it fow now
+    await client.send('DOMDebugger.setEventListenerBreakpoint', {
+      eventName: 'scroll',
+    });
+    */
   });
 
   const findTargetId = async (localFrame, interestingClassNames: string[]) => {
@@ -183,6 +190,29 @@ export default async (
     await resume();
   };
 
+  let scrollTimeout = null;
+  const handleScrollEvent = async () => {
+    if (scrollTimeout) return resume();
+    const prevScrollHeightResp = await client.send('Runtime.evaluate', {
+      expression: 'document.body.scrollHeight',
+    });
+    const prevScrollHeight = prevScrollHeightResp.result.value;
+    scrollTimeout = new Promise(function (resolve) {
+      setTimeout(async () => {
+        const currentScrollHeightResp = await client.send('Runtime.evaluate', {
+          expression: 'document.body.scrollHeight',
+        });
+        const currentScrollHeight = currentScrollHeightResp.result.value;
+        if (currentScrollHeight > prevScrollHeight) {
+          addLineToPuppeteerScript(`await scrollToBottom();`);
+        }
+        scrollTimeout = null;
+        resolve();
+      }, 1000);
+    });
+    await resume();
+  };
+
   client.on('Debugger.paused', async function (
     pausedEvent: protocol.Protocol.Debugger.PausedEvent
   ) {
@@ -197,6 +227,8 @@ export default async (
       await handleSubmitEvent(result);
     } else if (eventName === 'listener:change') {
       await handleChangeEvent(result);
+    } else if (eventName === 'listener:scroll') {
+      await handleScrollEvent();
     } else {
       await skip();
     }
@@ -212,6 +244,7 @@ export default async (
     window.addEventListener('change', (event) => {}, true);
     window.addEventListener('click', (event) => {}, true);
     window.addEventListener('submit', (event) => {}, true);
+    window.addEventListener('scroll', () => {}, true);
   });
 
   // Setup puppeteer
