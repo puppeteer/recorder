@@ -11,6 +11,7 @@
     "url": "https://github.com/puppeteer/recorder.git"
   },
   "dependencies": {
+    "css.escape": "^1.5.1",
     "expect": "^26.1.0",
     "puppeteer": "^5.4.0"
   },

@@ -19,6 +19,7 @@
  */
 
 import * as helpers from '../src/helpers';
+require('css.escape');
 
 const cssPath = (node: Node) => helpers.cssPath.bind(node)();
 
@@ -80,5 +81,13 @@ describe('CSS Path', () => {
 
     const path = cssPath(node);
     expect(path).toBe('body > input[type="email"]');
+  });
+
+  it('should escape properly', () => {
+    document.body.innerHTML = `<input type="foo&quot;bar" data-id="test">`;
+    const node = document.querySelector('[data-id="test"]');
+
+    const path = cssPath(node);
+    expect(path).toBe('body > input[type="foo\\"bar"]');
   });
 });
