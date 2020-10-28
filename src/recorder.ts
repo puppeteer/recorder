@@ -16,7 +16,24 @@
 
 import * as puppeteer from 'puppeteer';
 import { Readable } from 'stream';
-import { loadAndPatchInjectedModule } from './aria';
+import * as helpers from './helpers';
+import * as protocol from 'devtools-protocol';
+import { ProtocolMapping } from 'devtools-protocol/types/protocol-mapping.js';
+
+declare module 'puppeteer' {
+  interface ElementHandle {
+    _remoteObject: { objectId: string };
+  }
+  interface Page {
+    _client: puppeteer.CDPSession;
+  }
+  interface CDPSession {
+    send<T extends keyof ProtocolMapping.Commands>(
+      method: T,
+      ...paramArgs: ProtocolMapping.Commands[T]['paramsType']
+    ): Promise<ProtocolMapping.Commands[T]['returnType']>;
+  }
+}
 
 interface RecorderOptions {
   wsEndpoint?: string;
@@ -33,7 +50,50 @@ async function getBrowserInstance(options: RecorderOptions) {
   }
 }
 
-export default async (url: string, options: RecorderOptions = {}) => {
+export async function isSubmitButton(
+  client: puppeteer.CDPSession,
+  objectId: string
+): Promise<boolean> {
+  const isSubmitButtonResponse = await client.send('Runtime.callFunctionOn', {
+    functionDeclaration: helpers.isSubmitButton.toString(),
+    objectId,
+  });
+  return isSubmitButtonResponse.result.value;
+}
+
+export async function getSelector(
+  client: puppeteer.CDPSession,
+  objectId: string
+): Promise<string | null> {
+  let currentObjectId = objectId;
+  while (currentObjectId) {
+    const { nodes } = await client.send('Accessibility.queryAXTree', {
+      objectId: currentObjectId,
+    });
+    if (nodes.length === 0) return null;
+    const axNode = nodes[0];
+    const name = axNode.name.value;
+    const role = axNode.role.value;
+    if (name) {
+      return `aria/${name}[role="${role}"]`;
+    }
+    const { result } = await client.send('Runtime.callFunctionOn', {
+      functionDeclaration: helpers.getParent.toString(),
+      objectId: currentObjectId,
+    });
+    currentObjectId = result.objectId;
+  }
+  const { result } = await client.send('Runtime.callFunctionOn', {
+    functionDeclaration: helpers.cssPath.toString(),
+    objectId,
+  });
+  return result.value;
+}
+
+export default async (
+  url: string,
+  options: RecorderOptions = {}
+): Promise<Readable> => {
   if (!url.startsWith('http')) {
     url = 'https://' + url;
   }
@@ -44,6 +104,103 @@ export default async (url: string, options: RecorderOptions = {}) => {
   output.setEncoding('utf8');
   const browser = await getBrowserInstance(options);
   const page = await browser.pages().then((pages) => pages[0]);
+  const client = page._client;
+  page.on('domcontentloaded', async () => {
+    await client.send('Debugger.enable', {});
+    await client.send('DOMDebugger.setEventListenerBreakpoint', {
+      eventName: 'click',
+    });
+    await client.send('DOMDebugger.setEventListenerBreakpoint', {
+      eventName: 'change',
+    });
+    await client.send('DOMDebugger.setEventListenerBreakpoint', {
+      eventName: 'submit',
+    });
+  });
+
+  const findTargetId = async (localFrame, interestingClassNames: string[]) => {
+    const event = localFrame.find((prop) =>
+      interestingClassNames.includes(prop.value.className)
+    );
+    const eventProperties = await client.send('Runtime.getProperties', {
+      objectId: event.value.objectId as string,
+    });
+    const target = eventProperties.result.find(
+      (prop) => prop.name === 'target'
+    );
+    return target.value.objectId;
+  };
+
+  const skip = async () => {
+    await client.send('Debugger.resume', { terminateOnResume: false });
+  };
+  const resume = async () => {
+    await client.send('Debugger.setSkipAllPauses', { skip: true });
+    await skip();
+    await client.send('Debugger.setSkipAllPauses', { skip: false });
+  };
+
+  const handleClickEvent = async (localFrame) => {
+    const targetId = await findTargetId(localFrame, [
+      'MouseEvent',
+      'PointerEvent',
+    ]);
+    // Let submit handle this case if the click is on a submit button.
+    if (await isSubmitButton(client, targetId)) {
+      return skip();
+    }
+    const selector = await getSelector(client, targetId);
+    if (selector) {
+      addLineToPuppeteerScript(`await click(${JSON.stringify(selector)});`);
+    } else {
+      console.log(`failed to generate selector`);
+    }
+    await resume();
+  };
+
+  const handleSubmitEvent = async (localFrame) => {
+    const targetId = await findTargetId(localFrame, ['SubmitEvent']);
+    const selector = await getSelector(client, targetId);
+    if (selector) {
+      addLineToPuppeteerScript(`await submit(${JSON.stringify(selector)});`);
+    } else {
+      console.log(`failed to generate selector`);
+    }
+    await resume();
+  };
+
+  const handleChangeEvent = async (localFrame) => {
+    const targetId = await findTargetId(localFrame, ['Event']);
+    const targetValue = await client.send('Runtime.callFunctionOn', {
+      functionDeclaration: 'function() { return this.value }',
+      objectId: targetId,
+    });
+    const value = targetValue.result.value;
+    const selector = await getSelector(client, targetId);
+    addLineToPuppeteerScript(
+      `await type(${JSON.stringify(selector)}, ${JSON.stringify(value)});`
+    );
+    await resume();
+  };
+
+  client.on('Debugger.paused', async function (
+    pausedEvent: protocol.Protocol.Debugger.PausedEvent
+  ) {
+    const eventName = pausedEvent.data.eventName;
+    const localFrame = pausedEvent.callFrames[0].scopeChain[0];
+    const { result } = await client.send('Runtime.getProperties', {
+      objectId: localFrame.object.objectId,
+    });
+    if (eventName === 'listener:click') {
+      await handleClickEvent(result);
+    } else if (eventName === 'listener:submit') {
+      await handleSubmitEvent(result);
+    } else if (eventName === 'listener:change') {
+      await handleChangeEvent(result);
+    } else {
+      await skip();
+    }
+  });
 
   let identation = 0;
   const addLineToPuppeteerScript = (line: string) => {
@@ -51,8 +208,11 @@ export default async (url: string, options: RecorderOptions = {}) => {
     output.push(data + '\n');
   };
 
-  page.exposeFunction('addLineToPuppeteerScript', addLineToPuppeteerScript);
-  page.evaluateOnNewDocument(loadAndPatchInjectedModule());
+  page.evaluateOnNewDocument(() => {
+    window.addEventListener('change', (event) => {}, true);
+    window.addEventListener('click', (event) => {}, true);
+    window.addEventListener('submit', (event) => {}, true);
+  });
 
   // Setup puppeteer
   addLineToPuppeteerScript(
@@ -65,10 +225,10 @@ export default async (url: string, options: RecorderOptions = {}) => {
   await page.goto(url);
 
   // Add expectations for mainframe navigations
-  page.on('framenavigated', (frame: puppeteer.Frame) => {
+  page.on('framenavigated', async (frame: puppeteer.Frame) => {
     if (frame.parentFrame()) return;
     addLineToPuppeteerScript(
-      `expect(page.url()).resolves.toBe('${frame.url()}');`
+      `expect(page.url()).resolves.toBe(${JSON.stringify(frame.url())});`
     );
   });
 

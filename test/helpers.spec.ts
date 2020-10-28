@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
-import { cssPath } from '../src/injected/css-path';
+import * as helpers from '../src/helpers';
+
+const cssPath = (node: Node) => helpers.cssPath.bind(node)();
 
 describe('CSS Path', () => {
   it('should return an empty path if the given node is not an element node', () => {

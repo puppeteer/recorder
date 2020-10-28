@@ -11,9 +11,8 @@
     "url": "https://github.com/puppeteer/recorder.git"
   },
   "dependencies": {
-    "aria-api": "^0.3.0",
     "expect": "^26.1.0",
-    "puppeteer": "^5.0.0"
+    "puppeteer": "^5.4.0"
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
@@ -21,7 +20,7 @@
     "@types/puppeteer": "^3.0.1",
     "@typescript-eslint/eslint-plugin": "^4.5.0",
     "@typescript-eslint/parser": "^4.5.0",
-    "browserify": "^16.5.1",
+    "devtools-protocol": "0.0.820307",
     "eslint": "^7.11.0",
     "eslint-config-prettier": "^6.12.0",
     "eslint-plugin-import": "^2.22.0",
@@ -33,14 +32,11 @@
     "prettier": "^2.0.5",
     "ts-jest": "^26.0.0",
     "ts-node": "^8.10.2",
-    "tsify": "^4.0.2",
     "typescript": "^3.9.2"
   },
   "scripts": {
-    "test": "jest",
-    "build": "npm run build:node && npm run build:browser",
-    "build:node": "tsc",
-    "build:browser": "browserify src/injected/index.ts -p tsify > lib/inject.js",
+    "test": "npm run build && jest",
+    "build": "tsc",
     "dev": "ts-node ./src/cli.ts",
     "eslint": "([ \"$CI\" = true ] && eslint --ext js --ext ts --quiet -f codeframe . || eslint --ext js --ext ts .)",
     "eslint-fix": "eslint --ext js --ext ts --fix ."
