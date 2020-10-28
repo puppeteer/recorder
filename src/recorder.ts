@@ -116,12 +116,13 @@ export default async (
     await client.send('DOMDebugger.setEventListenerBreakpoint', {
       eventName: 'submit',
     });
-    /* The heuristics we have for recording scrolling are quite fragile and
-     * does not capture a reasonable set of scroll actions so we have decided
-     * to disable it fow now
-    await client.send('DOMDebugger.setEventListenerBreakpoint', {
+    // The heuristics we have for recording scrolling are quite fragile and
+    // does not capture a reasonable set of scroll actions so we have decided
+    // to disable it fow now
+    /*
+     await client.send('DOMDebugger.setEventListenerBreakpoint', {
       eventName: 'scroll',
-    });
+     });
     */
   });
 
@@ -194,13 +195,13 @@ export default async (
   const handleScrollEvent = async () => {
     if (scrollTimeout) return resume();
     const prevScrollHeightResp = await client.send('Runtime.evaluate', {
-      expression: 'document.body.scrollHeight',
+      expression: 'document.scrollingElement.scrollHeight',
     });
     const prevScrollHeight = prevScrollHeightResp.result.value;
     scrollTimeout = new Promise(function (resolve) {
       setTimeout(async () => {
         const currentScrollHeightResp = await client.send('Runtime.evaluate', {
-          expression: 'document.body.scrollHeight',
+          expression: 'document.scrollingElement.scrollHeight',
         });
         const currentScrollHeight = currentScrollHeightResp.result.value;
         if (currentScrollHeight > prevScrollHeight) {
