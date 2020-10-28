@@ -121,7 +121,7 @@ export function cssPath(): string {
       !node.getAttribute('id') &&
       !node.getAttribute('class')
     ) {
-      result += `[type="${CSS.escape(node.getAttribute('type'))}"]`;
+      result += `[type=${CSS.escape(node.getAttribute('type'))}]`;
     }
     if (needsNthChild) {
       result += `:nth-child(${ownIndex + 1})`;
