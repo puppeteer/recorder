@@ -51,11 +51,7 @@ async function getBrowserInstance(options: RecorderOptions) {
 }
 
 function escapeSelector(selector: string): string {
-  const escapedDblQuotedString = JSON.stringify(selector);
-  const decDblQuotes = escapedDblQuotedString.replace(/\\\"/g, '"');
-  const bumpSingleQuotes = decDblQuotes.replace(/\'/g, "\\'");
-  const trimOuterDblQuote = bumpSingleQuotes.slice(1, -1);
-  return "'" + trimOuterDblQuote + "'";
+  return JSON.stringify(selector);
 }
 
 export async function isSubmitButton(
