@@ -79,12 +79,9 @@ async function checkUnique(
     accessibleName: name,
     role: role,
   });
+  const ignoredIds = new Set(ignored.map((axNode) => axNode.backendDOMNodeId));
   const checkNameMinusTargetTree = checkName.nodes.filter(
-    (axNode) =>
-      !ignored.find(
-        (otherAxNode) =>
-          axNode.backendDOMNodeId === otherAxNode.backendDOMNodeId
-      )
+    (axNode) => !ignoredIds.has(axNode.backendDOMNodeId)
   );
   return checkNameMinusTargetTree.length < 2;
 }
