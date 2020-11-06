@@ -65,20 +65,56 @@ export async function isSubmitButton(
   return isSubmitButtonResponse.result.value;
 }
 
+type AXNode = protocol.Protocol.Accessibility.AXNode;
+type CDPSession = puppeteer.CDPSession;
+
+// We check that a selector uniquely selects an element by querying the
+// selector and checking that all found elements are in the subtree of the
+// target.
+async function checkUnique(
+  client: CDPSession,
+  ignored: AXNode[],
+  name?: string,
+  role?: string
+) {
+  const { root } = await client.send('DOM.getDocument', { depth: 0 });
+  const checkName = await client.send('Accessibility.queryAXTree', {
+    backendNodeId: root.backendNodeId,
+    accessibleName: name,
+    role: role,
+  });
+  const ignoredIds = new Set(ignored.map((axNode) => axNode.backendDOMNodeId));
+  const checkNameMinusTargetTree = checkName.nodes.filter(
+    (axNode) => !ignoredIds.has(axNode.backendDOMNodeId)
+  );
+  return checkNameMinusTargetTree.length < 2;
+}
+
 export async function getSelector(
   client: puppeteer.CDPSession,
   objectId: string
 ): Promise<string | null> {
   let currentObjectId = objectId;
+  let prevName = '';
   while (currentObjectId) {
-    const { nodes } = await client.send('Accessibility.queryAXTree', {
+    const queryResp = await client.send('Accessibility.queryAXTree', {
       objectId: currentObjectId,
     });
-    if (nodes.length === 0) return null;
-    const axNode = nodes[0];
-    const name = axNode.name.value;
-    const role = axNode.role.value;
-    if (name) {
+    const targetNodes = queryResp.nodes;
+    if (targetNodes.length === 0) break;
+    const axNode = targetNodes[0];
+    const name: string = axNode.name.value;
+    const role: string = axNode.role.value;
+    // If the name does not include the child name, we have probably reached a
+    // completely different entity so we give up and pick a CSS selector.
+    if (!name.includes(prevName)) break;
+    prevName = name;
+    const uniqueName = await checkUnique(client, targetNodes, name);
+    if (name && uniqueName) {
+      return `aria/${name}`;
+    }
+    const uniqueNameRole = await checkUnique(client, targetNodes, name, role);
+    if (name && role && uniqueNameRole) {
       return `aria/${name}[role="${role}"]`;
     }
     const { result } = await client.send('Runtime.callFunctionOn', {

@@ -79,12 +79,35 @@ describe('DOM', () => {
         client,
         element._remoteObject.objectId
       );
-      expect(selector).toBe('aria/Hello World[role="button"]');
+      expect(selector).toBe('aria/Hello World');
     });
 
     it('should return an aria name selector for the closest link or button', async () => {
       await page.setContent(
         `<form><button><span id="button">Hello World</span></button></form>`
+      );
+
+      const element = await page.$('button');
+      const selector = await getSelector(
+        client,
+        element._remoteObject.objectId
+      );
+      expect(selector).toBe('aria/Hello World');
+    });
+
+    it('should return name alone if it is unique', async () => {
+      await page.setContent(`<button><span>Hello World</span></button>`);
+
+      const element = await page.$('button');
+      const selector = await getSelector(
+        client,
+        element._remoteObject.objectId
+      );
+      expect(selector).toBe('aria/Hello World');
+    });
+    it('should include both name and role if name alone is not unique', async () => {
+      await page.setContent(
+        `<button><span>Hello World</span></button><h1>Hello World</h1>`
       );
 
       const element = await page.$('button');
@@ -105,7 +128,7 @@ describe('DOM', () => {
         client,
         element._remoteObject.objectId
       );
-      expect(selector).toBe('aria/Hello World[role="button"]');
+      expect(selector).toBe('aria/Hello World');
     });
 
     it('should return css selector if the element is not identifiable by an aria selector 1', async () => {
@@ -153,7 +176,7 @@ describe('DOM', () => {
       );
       const link = await page.$('a');
       const selector = await getSelector(client, link._remoteObject.objectId);
-      expect(selector).toBe('aria/Hello World[role="link"]');
+      expect(selector).toBe('aria/Hello World');
     });
   });
 });
