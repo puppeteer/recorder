@@ -50,6 +50,10 @@ async function getBrowserInstance(options: RecorderOptions) {
   }
 }
 
+function escapeSelector(selector: string): string {
+  return JSON.stringify(selector);
+}
+
 export async function isSubmitButton(
   client: puppeteer.CDPSession,
   objectId: string
@@ -159,7 +163,7 @@ export default async (
     }
     const selector = await getSelector(client, targetId);
     if (selector) {
-      addLineToPuppeteerScript(`await click(${JSON.stringify(selector)});`);
+      addLineToPuppeteerScript(`await click(${escapeSelector(selector)});`);
     } else {
       console.log(`failed to generate selector`);
     }
@@ -170,7 +174,7 @@ export default async (
     const targetId = await findTargetId(localFrame, ['SubmitEvent']);
     const selector = await getSelector(client, targetId);
     if (selector) {
-      addLineToPuppeteerScript(`await submit(${JSON.stringify(selector)});`);
+      addLineToPuppeteerScript(`await submit(${escapeSelector(selector)});`);
     } else {
       console.log(`failed to generate selector`);
     }
@@ -186,7 +190,7 @@ export default async (
     const value = targetValue.result.value;
     const selector = await getSelector(client, targetId);
     addLineToPuppeteerScript(
-      `await type(${JSON.stringify(selector)}, ${JSON.stringify(value)});`
+      `await type(${escapeSelector(selector)}, ${escapeSelector(value)});`
     );
     await resume();
   };
@@ -262,7 +266,7 @@ export default async (
   page.on('framenavigated', async (frame: puppeteer.Frame) => {
     if (frame.parentFrame()) return;
     addLineToPuppeteerScript(
-      `expect(page.url()).resolves.toBe(${JSON.stringify(frame.url())});`
+      `expect(page.url()).resolves.toBe(${escapeSelector(frame.url())});`
     );
   });
 

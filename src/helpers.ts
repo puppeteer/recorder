@@ -40,7 +40,7 @@ export function cssPath(): string {
     return '';
   }
   function idSelector(id: string) {
-    return '#' + id;
+    return '#' + CSS.escape(id);
   }
 
   class Step {
@@ -121,13 +121,13 @@ export function cssPath(): string {
       !node.getAttribute('id') &&
       !node.getAttribute('class')
     ) {
-      result += `[type="${node.getAttribute('type')}"]`;
+      result += `[type=${CSS.escape(node.getAttribute('type'))}]`;
     }
     if (needsNthChild) {
       result += `:nth-child(${ownIndex + 1})`;
     } else if (needsClassNames) {
       for (const className of ownClassNames) {
-        result += '.' + className;
+        result += '.' + CSS.escape(className);
       }
     }
     return new Step(result, false);
