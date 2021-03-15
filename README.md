@@ -1,8 +1,8 @@
-# Puppeteer Recorder [![npm @puppeteer/recorder package](https://img.shields.io/npm/v/@puppeteer/recorder)](https://www.npmjs.com/package/@puppeteer/recorder)
+# Puppeteer Recorder (no longer maintained) [![npm @puppeteer/recorder package](https://img.shields.io/npm/v/@puppeteer/recorder)](https://www.npmjs.com/package/@puppeteer/recorder)
 
 <img src="https://user-images.githubusercontent.com/10379601/29446482-04f7036a-841f-11e7-9872-91d1fc2ea683.png" height="200" align="right">
 
-> :warning: This is still work in progress
+> :warning: This package was a prototype for what can now be found in Chromium DevTools as the _Recorder_ experiment and will no longer be maintained.
 
 > Puppeteer is a Node.js library which provides a high-level API to control Chrome or Chromium over the [DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/).
 
